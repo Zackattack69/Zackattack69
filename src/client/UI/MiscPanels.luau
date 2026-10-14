@@ -40,7 +40,7 @@ end
 
 -- Bounty Board ------------------------------------------------------------------------------
 function MiscPanels.Quests(): any
-	local win = Lib.window("Bounty Board", Vector2.new(660, 460), C.Gold, C.Gold2)
+	local win = Lib.window("Bounty Board", Vector2.new(680, 480), C.Gold, C.Gold2, "📜")
 	local list = scroller(win.body, 10)
 
 	local function render()
@@ -53,7 +53,7 @@ function MiscPanels.Quests(): any
 			local t = Quests.ById[q.template]
 			local progress = math.max(0, (data.stats[t.stat] or 0) - q.start)
 			local done = progress >= q.goal
-			local row = Lib.new("Frame", { Size = UDim2.new(1, -8, 0, 110), BackgroundColor3 = C.Card, LayoutOrder = i, Parent = list })
+			local row = Lib.card(nil, { Size = UDim2.new(1, -8, 0, 110), BackgroundColor3 = C.Card, LayoutOrder = i, Parent = list })
 			Lib.corner(row, 16)
 			Lib.stroke(row, if done then C.Gold else Color3.fromRGB(10, 10, 16), 3)
 			Lib.label({ Text = "🎯 " .. Quests.Describe(q), Size = UDim2.new(1, -220, 0, 32), Position = UDim2.fromOffset(14, 12), TextXAlignment = Enum.TextXAlignment.Left, Parent = row })
@@ -61,7 +61,7 @@ function MiscPanels.Quests(): any
 			set(progress / q.goal)
 			Lib.label({ Text = Format.Number(math.min(progress, q.goal)) .. " / " .. Format.Number(q.goal), Size = UDim2.new(1, -230, 0, 20), Position = UDim2.fromOffset(14, 82), TextColor3 = C.SubText, Parent = row })
 			Lib.button({
-				Text = if done then "CLAIM 💠" .. q.reward else "💠 " .. q.reward,
+				Text = if done then "CLAIM 💎" .. q.reward else "💎 " .. q.reward,
 				Size = UDim2.fromOffset(180, 64),
 				Position = UDim2.new(1, -14, 0.5, 0),
 				AnchorPoint = Vector2.new(1, 0.5),
@@ -87,7 +87,7 @@ end
 
 -- Leaderboard -----------------------------------------------------------------------------------
 function MiscPanels.Leaderboard(): any
-	local win = Lib.window("Top Salvagers", Vector2.new(600, 520), C.Gold, C.Gold2)
+	local win = Lib.window("Top Salvagers", Vector2.new(620, 540), Color3.fromRGB(255, 165, 80), Color3.fromRGB(230, 95, 30), "🏆")
 	local list = scroller(win.body, 6)
 
 	local function render()
@@ -108,7 +108,7 @@ function MiscPanels.Leaderboard(): any
 			local rebirths = (p:GetAttribute("Rebirths") or 0) :: number
 			Lib.label({ Text = p.DisplayName, Size = UDim2.new(0.45, 0, 0, 30), Position = UDim2.fromOffset(62, 12), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Economy.RebirthColor(rebirths), Parent = row })
 			Lib.label({
-				Text = "♻ " .. rebirths .. "   🔩 " .. Format.Number((p:GetAttribute("TotalScrap") or 0) :: number) .. "   +" .. Format.Number((p:GetAttribute("Income") or 0) :: number) .. "/s",
+				Text = "♻ " .. rebirths .. "   🪙 " .. Format.Number((p:GetAttribute("TotalScrap") or 0) :: number) .. "   +" .. Format.Number((p:GetAttribute("Income") or 0) :: number) .. "/s",
 				Size = UDim2.new(0.5, -10, 0, 26),
 				Position = UDim2.new(0.5, 0, 0, 14),
 				TextXAlignment = Enum.TextXAlignment.Right,
@@ -131,7 +131,7 @@ end
 
 -- Items: style tokens, rebirth skips, crate vault, titles ----------------------------------------
 function MiscPanels.Inventory(openCrates: () -> ()): any
-	local win = Lib.window("Items", Vector2.new(700, 520), C.Scrap, C.Scrap2)
+	local win = Lib.window("Items", Vector2.new(720, 540), C.Purple, C.Purple2, "🎒")
 	local list = scroller(win.body, 10)
 
 	local function section(text: string, order: number)
@@ -149,7 +149,7 @@ function MiscPanels.Inventory(openCrates: () -> ()): any
 		Lib.list(tokens, 8, true)
 		for i, s in Styles.TokenStyles do
 			local st = Styles.Get(s)
-			local f = Lib.new("Frame", { Size = UDim2.fromOffset(120, 66), BackgroundColor3 = C.Card, LayoutOrder = i, Parent = tokens })
+			local f = Lib.card(nil, { Size = UDim2.fromOffset(120, 66), BackgroundColor3 = C.Card, LayoutOrder = i, Parent = tokens })
 			Lib.corner(f, 12)
 			Lib.stroke(f, st.color, 2)
 			Lib.label({ Text = st.badge .. " " .. s, Size = UDim2.new(1, -8, 0, 28), Position = UDim2.fromOffset(4, 4), Parent = f })
@@ -165,7 +165,7 @@ function MiscPanels.Inventory(openCrates: () -> ()): any
 			end
 		end
 		section("🗄️ Crate Vault: " .. free .. " crate(s)", 4)
-		Lib.button({ Text = "OPEN CRATE VAULT", Size = UDim2.fromOffset(260, 46), Color = C.Scrap, LayoutOrder = 5, Parent = list, OnClick = openCrates })
+		Lib.button({ Text = "OPEN CRATE VAULT", Size = UDim2.fromOffset(260, 46), Color = C.Blue, LayoutOrder = 5, Parent = list, OnClick = openCrates })
 
 		section("🏅 TITLES", 6)
 		local titles = Lib.new("Frame", { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, LayoutOrder = 7, Parent = list })
@@ -178,7 +178,7 @@ function MiscPanels.Inventory(openCrates: () -> ()): any
 			Lib.button({
 				Text = (if equipped then "✓ " else "") .. t,
 				Size = UDim2.new(1, -8, 0, 40),
-				Color = if equipped then C.Gold else C.Card,
+				Color = if equipped then C.Gold else C.Blue,
 				LayoutOrder = i,
 				Parent = titles,
 				OnClick = function()
@@ -198,7 +198,7 @@ end
 
 -- Settings ---------------------------------------------------------------------------------------
 function MiscPanels.Settings(): any
-	local win = Lib.window("Settings", Vector2.new(520, 360), C.Grey, C.Grey2)
+	local win = Lib.window("Settings", Vector2.new(540, 380), C.Grey, C.Grey2, "⚙️")
 	local list = scroller(win.body, 10)
 	local options = {
 		{ key = "quickOpen", text = "⚡ Quick crate opening" },
@@ -209,7 +209,7 @@ function MiscPanels.Settings(): any
 		clear(list)
 		for i, o in options do
 			local on = (State.settings :: any)[o.key]
-			local row = Lib.new("Frame", { Size = UDim2.new(1, -8, 0, 60), BackgroundColor3 = C.Card, LayoutOrder = i, Parent = list })
+			local row = Lib.card(nil, { Size = UDim2.new(1, -8, 0, 60), BackgroundColor3 = C.Card, LayoutOrder = i, Parent = list })
 			Lib.corner(row, 12)
 			Lib.label({ Text = o.text, Size = UDim2.new(1, -150, 0, 32), Position = UDim2.fromOffset(14, 14), TextXAlignment = Enum.TextXAlignment.Left, Parent = row })
 			Lib.button({
@@ -233,7 +233,7 @@ end
 
 -- Notifications ---------------------------------------------------------------------------------
 function MiscPanels.Notifications(): any
-	local win = Lib.window("Notifications", Vector2.new(560, 480), C.Scrap, C.Scrap2)
+	local win = Lib.window("Notifications", Vector2.new(580, 500), C.Blue, C.Blue2, "🔔")
 	local list = scroller(win.body, 6)
 	local function render()
 		clear(list)
@@ -244,7 +244,7 @@ function MiscPanels.Notifications(): any
 		end
 		for i = #State.notifications, 1, -1 do
 			local n = State.notifications[i]
-			local row = Lib.new("Frame", { Size = UDim2.new(1, -8, 0, 48), BackgroundColor3 = C.Card, LayoutOrder = #State.notifications - i, Parent = list })
+			local row = Lib.card(nil, { Size = UDim2.new(1, -8, 0, 48), BackgroundColor3 = C.Card, LayoutOrder = #State.notifications - i, Parent = list })
 			Lib.corner(row, 10)
 			Lib.label({ Text = n.text, Size = UDim2.new(1, -90, 1, -12), Position = UDim2.fromOffset(10, 6), TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, Parent = row })
 			Lib.label({ Text = DateTime.fromUnixTimestamp(n.t):FormatLocalTime("LT", "en-us"), Size = UDim2.fromOffset(70, 24), Position = UDim2.new(1, -78, 0.5, -12), TextColor3 = C.SubText, Parent = row })

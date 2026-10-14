@@ -66,8 +66,8 @@ local function refreshPlot(player: Player)
 		local pod = dyn:FindFirstChild("ShowcasePod" .. i) :: BasePart?
 		if pod then
 			local model = DroidModel.Build(entry.id, entry.style)
-			local facing = (plot.PrimaryPart :: BasePart).CFrame
-			model:PivotTo(CFrame.new(pod.Position + Vector3.new(0, 0.6, 0)) * facing.Rotation * CFrame.Angles(0, math.rad(180), 0))
+			local facing = WorldBuilder.PlotFacing(plot)
+			model:PivotTo(CFrame.new(pod.Position + Vector3.new(0, 0.6, 0)) * facing.Rotation)
 			model.Parent = dyn
 		end
 	end

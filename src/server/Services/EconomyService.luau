@@ -73,7 +73,7 @@ function EconomyService.BuyUpgrade(player: Player, id: string): (boolean, string
 	end
 	local cost = Economy.UpgradeCost(id, level, data.rebirths)
 	if data.scrap < cost then
-		return false, "Not enough Scrap"
+		return false, "Not enough Credits"
 	end
 	data.scrap -= cost
 	data.upgrades[id] = level + 1
@@ -97,7 +97,7 @@ function EconomyService.Rebirth(player: Player, useSkip: boolean?): (boolean, st
 		end
 		data.tokens.RebirthSkip -= 1
 	elseif data.scrap < cost then
-		return false, "Need " .. Format.Number(cost) .. " Scrap"
+		return false, "Need " .. Format.Number(cost) .. " Credits"
 	end
 
 	local novaReward = Economy.RebirthNovaReward(data.rebirths)
@@ -123,7 +123,7 @@ function EconomyService.Rebirth(player: Player, useSkip: boolean?): (boolean, st
 	Bus.Fire("DroidsChanged", player)
 
 	local unlocked = Worlds.Get(data.rebirths + 1)
-	local msg = "REBIRTH " .. Economy.Roman(data.rebirths) .. "! +" .. novaReward .. " Nova, free Rare Crate"
+	local msg = "REBIRTH " .. Economy.Roman(data.rebirths) .. "! +" .. novaReward .. " Aura, free Rare Crate"
 	if unlocked and not data.allMaps then
 		msg ..= ", and " .. unlocked.name .. " unlocked!"
 	end
@@ -170,7 +170,7 @@ function EconomyService.ClaimQuest(player: Player, index: number): (boolean, str
 	table.remove(data.quests, index)
 	table.insert(data.quests, index, Quests.Roll(rng, data.quests, data.stats))
 	DataService.MarkDirty(player, true)
-	notify(player, "Bounty complete! +" .. q.reward .. " Nova Crystals", "nova")
+	notify(player, "Bounty complete! +" .. q.reward .. " Aura", "nova")
 	return true
 end
 
@@ -202,7 +202,7 @@ local function setupLeaderstats(profile: DataService.Profile)
 	local ls = Instance.new("Folder")
 	ls.Name = "leaderstats"
 	local scrap = Instance.new("StringValue")
-	scrap.Name = "Scrap"
+	scrap.Name = "Credits"
 	scrap.Parent = ls
 	local rebirths = Instance.new("IntValue")
 	rebirths.Name = "Rebirths"
@@ -215,7 +215,7 @@ local function updateLeaderstats(player: Player, data: any)
 	if not ls then
 		return
 	end
-	(ls:FindFirstChild("Scrap") :: StringValue).Value = Format.Number(data.scrap);
+	(ls:FindFirstChild("Credits") :: StringValue).Value = Format.Number(data.scrap);
 	(ls:FindFirstChild("Rebirths") :: IntValue).Value = data.rebirths
 	player:SetAttribute("Income", Economy.IncomePerSecond(data))
 	player:SetAttribute("TotalScrap", data.totalScrap)
@@ -233,7 +233,7 @@ local function onLoaded(profile: DataService.Profile)
 			local earned = math.floor(Economy.IncomePerSecond(data) * Economy.OFFLINE_RATE * away)
 			if earned > 0 then
 				EconomyService.AddScrap(data, earned)
-				task.delay(4, notify, player, "Auto-Foundry earned " .. Format.Number(earned) .. " Scrap while you were away!", "scrap")
+				task.delay(4, notify, player, "Auto-Foundry earned " .. Format.Number(earned) .. " Credits while you were away!", "scrap")
 			end
 		end
 	end

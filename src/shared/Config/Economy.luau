@@ -3,6 +3,7 @@
 -- (display/predictions) always agree. Tune pacing here (Design Doc §9.5).
 
 local Droids = require(script.Parent.Droids)
+local Names = require(script.Parent.StarWarsNames)
 local Styles = require(script.Parent.Styles)
 local Worlds = require(script.Parent.Worlds)
 
@@ -24,7 +25,7 @@ Economy.Upgrades = {
 		id = "Claws",
 		name = "Salvage Claws",
 		icon = "🦾",
-		description = "+1 base Scrap per salvage click.",
+		description = "+1 base Credits per salvage click.",
 		baseCost = 25,
 		growth = 1.55,
 		maxLevel = 100,
@@ -74,15 +75,7 @@ function Economy.RebirthNovaReward(rebirths: number): number
 	return 25 + 10 * rebirths
 end
 
-Economy.RebirthTitles = {
-	"Rust Aura",
-	"Neon Aura",
-	"Chrome Aura",
-	"Cloud Aura",
-	"Forge Aura",
-	"Frost Aura",
-	"Spire Aura",
-}
+Economy.RebirthTitles = Names.RebirthTitles
 
 Economy.RebirthColors = {
 	Color3.fromRGB(205, 120, 60),
@@ -106,7 +99,7 @@ function Economy.RebirthTitle(rebirths: number): string?
 	if rebirths <= #Economy.RebirthTitles then
 		return "Rebirth " .. Economy.Roman(rebirths) .. " — " .. Economy.RebirthTitles[rebirths]
 	end
-	return "Prestige " .. Economy.Roman(rebirths - #Economy.RebirthTitles) .. " — Core Aura"
+	return "Prestige " .. Economy.Roman(rebirths - #Economy.RebirthTitles) .. " — " .. Names.PrestigeTitle
 end
 
 function Economy.RebirthColor(rebirths: number): Color3

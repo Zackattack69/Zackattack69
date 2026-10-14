@@ -87,20 +87,58 @@ local function applyLighting(index: number)
 	Lighting.ClockTime = world.clockTime
 	Lighting.Ambient = world.colors.ambient
 	Lighting.OutdoorAmbient = world.colors.ambient
+	Lighting.Brightness = if world.clockTime < 6 or world.clockTime > 19 then 1.5 else 2.6
+	Lighting.EnvironmentDiffuseScale = 0.6
+	Lighting.EnvironmentSpecularScale = 0.6
 	Lighting.FogColor = world.colors.fog
 	Lighting.FogStart = 0
-	Lighting.FogEnd = world.fogEnd
+	Lighting.FogEnd = world.fogEnd * 2
+
 	local atmos = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere")
-	atmos.Color = world.colors.fog
-	atmos.Decay = world.colors.ground
-	atmos.Density = if index == 2 or index == 8 then 0.45 else 0.3
-	atmos.Haze = 1.5
+	atmos.Color = world.colors.sky
+	atmos.Decay = world.colors.fog
+	atmos.Density = if world.haze <= 0 then 0 else math.clamp(world.haze * 0.13, 0.15, 0.45)
+	atmos.Haze = world.haze
+	atmos.Glare = if world.clockTime > 6 and world.clockTime < 19 then 0.4 else 0
+	atmos.Offset = 0.15
 	atmos.Parent = Lighting
+
+	local sky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky")
+	sky.StarCount = world.starCount
+	sky.CelestialBodiesShown = world.index ~= 8 and world.index ~= 7
+	sky.SunAngularSize = if world.index == 2 then 0 else 18 -- Sigmatooine uses its own twin suns
+	sky.Parent = Lighting
+
 	local bloom = Lighting:FindFirstChildOfClass("BloomEffect") or Instance.new("BloomEffect")
-	bloom.Intensity = 0.6
-	bloom.Size = 30
-	bloom.Threshold = 1.6
+	bloom.Intensity = 0.7
+	bloom.Size = 32
+	bloom.Threshold = 1.5
 	bloom.Parent = Lighting
+
+	local cc = Lighting:FindFirstChildOfClass("ColorCorrectionEffect") or Instance.new("ColorCorrectionEffect")
+	cc.Saturation = 0.15
+	cc.Contrast = 0.08
+	cc.TintColor = Color3.new(1, 1, 1):Lerp(world.colors.sky, 0.08)
+	cc.Parent = Lighting
+
+	local sun = Lighting:FindFirstChildOfClass("SunRaysEffect") or Instance.new("SunRaysEffect")
+	sun.Intensity = 0.08
+	sun.Spread = 0.6
+	sun.Parent = Lighting
+
+	-- dynamic clouds (Endor, Bespin)
+	local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
+	if world.clouds then
+		clouds = clouds or Instance.new("Clouds")
+		local cl = clouds :: Clouds
+		cl.Cover = world.clouds.cover
+		cl.Density = world.clouds.density
+		cl.Color = world.clouds.color
+		cl.Enabled = true
+		cl.Parent = workspace.Terrain
+	elseif clouds then
+		clouds.Enabled = false
+	end
 end
 
 function WorldFx.Init()
@@ -129,9 +167,28 @@ function WorldFx.Init()
 		task.delay(0.9, applyLighting, LocalPlayer:GetAttribute("World") or 1)
 	end)
 
+	local spinners: { BasePart } = {}
+	task.spawn(function()
+		local worldsFolder = workspace:WaitForChild("Worlds", 60)
+		if worldsFolder then
+			local function scan(d: Instance)
+				if d:IsA("BasePart") and d:GetAttribute("Spin") then
+					table.insert(spinners, d)
+				end
+			end
+			for _, d in worldsFolder:GetDescendants() do
+				scan(d)
+			end
+			worldsFolder.DescendantAdded:Connect(scan)
+		end
+	end)
+
 	local t = 0
 	RunService.RenderStepped:Connect(function(dt)
 		t += dt
+		for _, p in spinners do
+			p.CFrame = p.CFrame * CFrame.Angles(0, dt * 1.2, 0)
+		end
 		-- followers trail their owner with a hover bob
 		for player, f in followers do
 			local char = player.Character

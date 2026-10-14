@@ -43,7 +43,8 @@ local function announce(player: Player, droidId: number, style: string)
 	if not droid then
 		return
 	end
-	local isMythic = droid.rarity == "Mythic"
+	local isIconic = droid.rarity == "Iconic"
+	local isMythic = droid.rarity == "Mythic" or isIconic
 	local isRainbow = style == "Rainbow"
 	if not (isMythic or isRainbow or (droid.rarity == "Legendary" and style ~= "Standard")) then
 		return
@@ -55,7 +56,7 @@ local function announce(player: Player, droidId: number, style: string)
 		text = player.DisplayName .. " just unboxed a " .. label .. "!",
 		rarity = droid.rarity,
 		style = style,
-		epic = isMythic and isRainbow, -- full-screen fireworks for everyone
+		epic = isIconic or (isMythic and isRainbow), -- full-screen fireworks for everyone
 	})
 end
 
@@ -106,12 +107,12 @@ function DroidService.OpenCrate(player: Player, crateId: string, useFree: boolea
 		data.freeCrates[crateId] -= 1
 	elseif crate.currency == "Scrap" then
 		if data.scrap < crate.cost then
-			return false, "Not enough Scrap"
+			return false, "Not enough Credits"
 		end
 		data.scrap -= crate.cost
 	elseif crate.currency == "Nova" then
 		if data.nova < crate.cost then
-			return false, "Not enough Nova Crystals"
+			return false, "Not enough Aura"
 		end
 		data.nova -= crate.cost
 	else
@@ -287,7 +288,7 @@ function DroidService.Recycle(player: Player, uids: { string }): (boolean, strin
 	EconomyService.AddScrap(data, total)
 	DataService.MarkDirty(player, true)
 	Bus.Fire("DroidsChanged", player)
-	return true, "Recycled for " .. Format.Number(total) .. " Scrap"
+	return true, "Recycled for " .. Format.Number(total) .. " Credits"
 end
 
 -- Showcase: the top droids that visibly follow the player (rendered client-side).

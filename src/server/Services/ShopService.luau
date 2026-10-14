@@ -27,7 +27,7 @@ end
 local function addScrapPack(player: Player, data: any, fraction: number)
 	local amount = Economy.ScrapPackAmount(data, fraction)
 	EconomyService.AddScrap(data, amount)
-	return Format.Number(amount) .. " Scrap"
+	return Format.Number(amount) .. " Credits"
 end
 
 local function randomMythic(): number
@@ -54,7 +54,7 @@ local function onPassOwned(player: Player, key: string)
 			data.lastMonthly = month
 			data.nova += 500
 			addCrates(data, "Guaranteed_Mythic", 1)
-			EconomyService.Notify(player, "Ultimate VIP+ monthly perks: +500 Nova and a Mythic Crate!", "nova")
+			EconomyService.Notify(player, "Ultimate VIP+ monthly perks: +500 Aura and a Mythic Crate!", "nova")
 		end
 	end
 	DataService.MarkDirty(player, true)
@@ -82,15 +82,15 @@ local GRANTS: { [string]: (Player, any) -> string } = {
 	end,
 	NovaSmall = function(_, data)
 		data.nova += 25
-		return "25 Nova Crystals"
+		return "25 Aura"
 	end,
 	NovaMedium = function(_, data)
 		data.nova += 100
-		return "100 Nova Crystals"
+		return "100 Aura"
 	end,
 	NovaLarge = function(_, data)
 		data.nova += 300
-		return "300 Nova Crystals"
+		return "300 Aura"
 	end,
 	RebirthSkip = function(_, data)
 		data.tokens.RebirthSkip += 1
@@ -145,16 +145,16 @@ local GRANTS: { [string]: (Player, any) -> string } = {
 	MegaBundle = function(player, data)
 		local s = addScrapPack(player, data, 6)
 		data.nova += 1000
-		return s .. " + 1,000 Nova Crystals"
+		return s .. " + 1,000 Aura"
 	end,
 	AllMaps = function(player, data)
 		data.allMaps = true
 		Bus.Fire("Rebirthed", player)
 		return "access to every world"
 	end,
-	ArchitectPack = function(player, _)
-		DroidService.Grant(player, Droids.ARCHITECT_ID, "Standard")
-		return "The Architect"
+	IconicCrate = function(_, data)
+		addCrates(data, "Guaranteed_Iconic", 1)
+		return "an ICONIC Crate (see your Crate Vault)"
 	end,
 	GenesisVault = function(player, _)
 		local id = randomMythic()

@@ -1,26 +1,47 @@
 --!strict
--- The 8 worlds (Design Doc §3). A galaxy-spanning salvage run — each world is a
--- different planet/station reached by a hyperspace jump.
+-- The 8 planets. Each one is reached by a hyperspace jump and is built at
+-- server start from the terrain + set-piece settings below (see WorldBuilder).
+
+export type TerrainSpec = {
+	kind: "terrain" | "platform", -- terrain = generated landscape, platform = built floor (city / station / clouds)
+	top: Enum.Material?, -- surface material
+	base: Enum.Material?, -- material underneath / on slopes
+	peak: Enum.Material?, -- material on the highest ground
+	amplitude: number?, -- how tall the hills get
+	frequency: number?, -- smaller = wider hills
+	flatRadius: number?, -- the play area in the middle stays flat
+	waterLevel: number?, -- fill valleys below this height with water
+	lava: boolean?, -- valleys glow with lava instead of water
+}
 
 export type World = {
 	index: number,
 	name: string,
 	theme: string,
-	planet: string, -- flavour text shown on the map card
+	planet: string,
 	unlockRebirth: number,
-	incomeMult: number, -- multiplier for droids STATIONED here
-	power: number, -- base strength of droids that ORIGINATE here
-	prefixes: { string }, -- droid name prefixes for this biome
-	origin: Vector3, -- where the world is built in Workspace
-	colors: { ground: Color3, accent: Color3, accent2: Color3, fog: Color3, ambient: Color3 },
-	groundMaterial: Enum.Material,
+	incomeMult: number,
+	power: number,
+	origin: Vector3,
+	colors: { ground: Color3, accent: Color3, accent2: Color3, fog: Color3, ambient: Color3, sky: Color3 },
+	terrain: TerrainSpec,
 	clockTime: number,
 	fogEnd: number,
+	haze: number,
+	clouds: { cover: number, density: number, color: Color3 }?,
+	starCount: number,
+	icon: string,
 }
+
+local Names = require(script.Parent.StarWarsNames)
 
 local SPACING = 3000
 
 local function w(index: number, data: any): World
+	local names = Names.Planets[index]
+	data.name = names.name
+	data.theme = names.theme
+	data.planet = names.blurb
 	data.index = index
 	data.unlockRebirth = index - 1
 	data.origin = Vector3.new((index - 1) * SPACING, 0, 0)
@@ -28,150 +49,154 @@ local function w(index: number, data: any): World
 	return data :: World
 end
 
+local M = Enum.Material
+
 local Worlds = {}
 
 Worlds.List = {
 	w(1, {
-		name = "The Scrapyard",
-		theme = "Ship graveyard",
-		planet = "Rust-belt moon of the Kessra system. Crashed freighters as far as the eye can see.",
+		icon = "🏜️",
 		incomeMult = 1,
-		prefixes = { "Rust", "Scrap", "Junk", "Grit", "Slag", "Tin" },
 		colors = {
-			ground = Color3.fromRGB(150, 105, 70),
-			accent = Color3.fromRGB(255, 150, 60),
-			accent2 = Color3.fromRGB(110, 90, 80),
-			fog = Color3.fromRGB(210, 150, 100),
-			ambient = Color3.fromRGB(120, 90, 70),
+			ground = Color3.fromRGB(214, 170, 112),
+			accent = Color3.fromRGB(255, 160, 60),
+			accent2 = Color3.fromRGB(150, 155, 165),
+			fog = Color3.fromRGB(235, 195, 150),
+			ambient = Color3.fromRGB(150, 120, 90),
+			sky = Color3.fromRGB(240, 200, 150),
 		},
-		groundMaterial = Enum.Material.Ground,
-		clockTime = 16.5,
-		fogEnd = 900,
+		terrain = { kind = "terrain", top = M.Sand, base = M.Sandstone, peak = M.Sandstone, amplitude = 34, frequency = 1 / 140, flatRadius = 230 },
+		clockTime = 15.5,
+		fogEnd = 1400,
+		haze = 2.2,
+		starCount = 0,
 	}),
 	w(2, {
-		name = "Undercroft",
-		theme = "Underground neon city",
-		planet = "A smuggler's warren carved beneath the crust, lit only by neon.",
+		icon = "☀️",
 		incomeMult = 1.5,
-		prefixes = { "Neon", "Glow", "Volt", "Hex", "Pulse", "Wire" },
 		colors = {
-			ground = Color3.fromRGB(30, 28, 45),
-			accent = Color3.fromRGB(255, 50, 200),
-			accent2 = Color3.fromRGB(40, 220, 255),
-			fog = Color3.fromRGB(40, 15, 60),
-			ambient = Color3.fromRGB(80, 50, 120),
+			ground = Color3.fromRGB(232, 200, 140),
+			accent = Color3.fromRGB(255, 130, 50),
+			accent2 = Color3.fromRGB(225, 205, 170),
+			fog = Color3.fromRGB(255, 225, 175),
+			ambient = Color3.fromRGB(190, 155, 110),
+			sky = Color3.fromRGB(140, 190, 240),
 		},
-		groundMaterial = Enum.Material.Slate,
-		clockTime = 0,
-		fogEnd = 500,
+		terrain = { kind = "terrain", top = M.Sand, base = M.Sandstone, peak = M.Rock, amplitude = 55, frequency = 1 / 110, flatRadius = 170 },
+		clockTime = 13.5,
+		fogEnd = 2200,
+		haze = 1.4,
+		starCount = 0,
 	}),
 	w(3, {
-		name = "Duneport",
-		theme = "Desert trading outpost",
-		planet = "A twin-sun desert spaceport. Traders, scavengers, and very warm droids.",
+		icon = "❄️",
 		incomeMult = 2,
-		prefixes = { "Dune", "Sirocco", "Sand", "Mirage", "Ember", "Dust" },
 		colors = {
-			ground = Color3.fromRGB(230, 195, 130),
-			accent = Color3.fromRGB(255, 120, 40),
-			accent2 = Color3.fromRGB(200, 160, 110),
-			fog = Color3.fromRGB(255, 220, 170),
-			ambient = Color3.fromRGB(180, 140, 100),
+			ground = Color3.fromRGB(240, 248, 255),
+			accent = Color3.fromRGB(110, 200, 255),
+			accent2 = Color3.fromRGB(200, 205, 215),
+			fog = Color3.fromRGB(215, 232, 250),
+			ambient = Color3.fromRGB(175, 195, 225),
+			sky = Color3.fromRGB(200, 220, 240),
 		},
-		groundMaterial = Enum.Material.Sand,
-		clockTime = 13,
-		fogEnd = 1200,
+		terrain = { kind = "terrain", top = M.Snow, base = M.Glacier, peak = M.Ice, amplitude = 70, frequency = 1 / 120, flatRadius = 170 },
+		clockTime = 11,
+		fogEnd = 700,
+		haze = 3,
+		starCount = 0,
 	}),
 	w(4, {
-		name = "Cloud Reach",
-		theme = "Floating gas-mining platform",
-		planet = "A mining city drifting through the pastel clouds of a gas giant.",
+		icon = "🌲",
 		incomeMult = 3,
-		prefixes = { "Sky", "Zephyr", "Gale", "Nimbus", "Aero", "Cirrus" },
 		colors = {
-			ground = Color3.fromRGB(235, 225, 240),
-			accent = Color3.fromRGB(255, 160, 120),
-			accent2 = Color3.fromRGB(150, 190, 255),
-			fog = Color3.fromRGB(255, 200, 190),
-			ambient = Color3.fromRGB(200, 170, 180),
+			ground = Color3.fromRGB(80, 120, 60),
+			accent = Color3.fromRGB(255, 190, 90),
+			accent2 = Color3.fromRGB(120, 95, 70),
+			fog = Color3.fromRGB(150, 185, 150),
+			ambient = Color3.fromRGB(100, 130, 95),
+			sky = Color3.fromRGB(150, 200, 230),
 		},
-		groundMaterial = Enum.Material.Marble,
-		clockTime = 17.8,
-		fogEnd = 1500,
+		terrain = { kind = "terrain", top = M.LeafyGrass, base = M.Mud, peak = M.Grass, amplitude = 40, frequency = 1 / 100, flatRadius = 160, waterLevel = -6 },
+		clockTime = 9.5,
+		fogEnd = 650,
+		haze = 1.8,
+		clouds = { cover = 0.55, density = 0.6, color = Color3.fromRGB(240, 245, 240) },
+		starCount = 0,
 	}),
 	w(5, {
-		name = "The Hatchery",
-		theme = "Fabrication facility",
-		planet = "A hive-world foundry where droids are grown in rows of glowing pods.",
+		icon = "☁️",
 		incomeMult = 4.5,
-		prefixes = { "Hive", "Forge", "Brood", "Molt", "Chitin", "Spawn" },
 		colors = {
-			ground = Color3.fromRGB(140, 70, 50),
-			accent = Color3.fromRGB(255, 90, 30),
-			accent2 = Color3.fromRGB(255, 200, 80),
-			fog = Color3.fromRGB(170, 80, 50),
-			ambient = Color3.fromRGB(140, 70, 50),
+			ground = Color3.fromRGB(240, 235, 240),
+			accent = Color3.fromRGB(255, 150, 110),
+			accent2 = Color3.fromRGB(255, 205, 180),
+			fog = Color3.fromRGB(255, 190, 170),
+			ambient = Color3.fromRGB(220, 170, 160),
+			sky = Color3.fromRGB(255, 170, 130),
 		},
-		groundMaterial = Enum.Material.Rock,
-		clockTime = 18.3,
-		fogEnd = 700,
+		terrain = { kind = "platform", top = M.Marble },
+		clockTime = 17.7,
+		fogEnd = 2500,
+		haze = 2.5,
+		clouds = { cover = 0.85, density = 0.8, color = Color3.fromRGB(255, 200, 185) },
+		starCount = 0,
 	}),
 	w(6, {
-		name = "Frostspire",
-		theme = "Ice planet",
-		planet = "A frozen outpost where the wind howls and the droids never stop shivering.",
+		icon = "🌋",
 		incomeMult = 7,
-		prefixes = { "Frost", "Rime", "Glacia", "Hail", "Tundra", "Floe" },
 		colors = {
-			ground = Color3.fromRGB(235, 245, 255),
-			accent = Color3.fromRGB(120, 200, 255),
-			accent2 = Color3.fromRGB(180, 230, 255),
-			fog = Color3.fromRGB(210, 230, 250),
-			ambient = Color3.fromRGB(170, 190, 220),
+			ground = Color3.fromRGB(45, 35, 35),
+			accent = Color3.fromRGB(255, 90, 20),
+			accent2 = Color3.fromRGB(80, 75, 80),
+			fog = Color3.fromRGB(120, 40, 20),
+			ambient = Color3.fromRGB(150, 70, 50),
+			sky = Color3.fromRGB(120, 30, 15),
 		},
-		groundMaterial = Enum.Material.Snow,
-		clockTime = 10,
+		terrain = { kind = "terrain", top = M.Basalt, base = M.CrackedLava, peak = M.Basalt, amplitude = 60, frequency = 1 / 90, flatRadius = 150, waterLevel = -4, lava = true },
+		clockTime = 19,
 		fogEnd = 600,
+		haze = 3,
+		starCount = 1000,
 	}),
 	w(7, {
-		name = "Undercity Spire",
-		theme = "Vertical mega-city",
-		planet = "A planet-wide city. Air-traffic lanes stack a thousand levels high.",
+		icon = "🏙️",
 		incomeMult = 10,
-		prefixes = { "Spire", "Holo", "Chrome", "Sector", "Vertex", "Transit" },
 		colors = {
-			ground = Color3.fromRGB(70, 75, 90),
-			accent = Color3.fromRGB(80, 170, 255),
-			accent2 = Color3.fromRGB(255, 210, 90),
-			fog = Color3.fromRGB(60, 70, 110),
-			ambient = Color3.fromRGB(90, 100, 140),
+			ground = Color3.fromRGB(110, 115, 130),
+			accent = Color3.fromRGB(90, 180, 255),
+			accent2 = Color3.fromRGB(255, 210, 120),
+			fog = Color3.fromRGB(80, 95, 140),
+			ambient = Color3.fromRGB(110, 120, 160),
+			sky = Color3.fromRGB(60, 70, 130),
 		},
-		groundMaterial = Enum.Material.Concrete,
-		clockTime = 20,
-		fogEnd = 1400,
+		terrain = { kind = "platform", top = M.Concrete },
+		clockTime = 19.6,
+		fogEnd = 2600,
+		haze = 1.6,
+		starCount = 3000,
 	}),
 	w(8, {
-		name = "The Core Vault",
-		theme = "Endgame reactor facility",
-		planet = "A sealed reactor at the heart of a dead star. Only the bold salvage here.",
+		icon = "🌑",
 		incomeMult = 15,
-		prefixes = { "Core", "Reactor", "Fusion", "Quasar", "Nova", "Singular" },
 		colors = {
-			ground = Color3.fromRGB(45, 45, 50),
+			ground = Color3.fromRGB(70, 72, 80),
 			accent = Color3.fromRGB(255, 60, 60),
-			accent2 = Color3.fromRGB(255, 255, 255),
-			fog = Color3.fromRGB(80, 10, 10),
-			ambient = Color3.fromRGB(120, 50, 50),
+			accent2 = Color3.fromRGB(150, 155, 165),
+			fog = Color3.fromRGB(10, 10, 20),
+			ambient = Color3.fromRGB(110, 110, 130),
+			sky = Color3.fromRGB(5, 5, 15),
 		},
-		groundMaterial = Enum.Material.DiamondPlate,
+		terrain = { kind = "platform", top = M.DiamondPlate },
 		clockTime = 0,
-		fogEnd = 800,
+		fogEnd = 3000,
+		haze = 0,
+		starCount = 5000,
 	}),
 } :: { World }
 
 Worlds.Count = #Worlds.List
 
--- Droids stationed in the world they were salvaged from get a home bonus.
+-- Droids stationed on the planet they were salvaged from get a home bonus.
 Worlds.HomeBonus = 0.25
 
 function Worlds.Get(index: number): World

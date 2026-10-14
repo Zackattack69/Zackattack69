@@ -19,7 +19,7 @@ local C = Lib.Colors
 local Effects = {}
 
 local TOAST_COLORS = {
-	info = { C.Card, C.Panel2 },
+	info = { C.Blue, C.Blue2 },
 	error = { C.Red, C.Red2 },
 	success = { C.Green, C.Green2 },
 	scrap = { C.Scrap, C.Scrap2 },
@@ -72,14 +72,14 @@ function Effects.Init(gui: ScreenGui, fxGui: ScreenGui)
 		end)
 	end
 	State.On("ClickFxScreen", function(pos: Vector2, value: number)
-		floatText(pos, "+" .. Format.Number(value) .. " 🔩", C.Gold)
+		floatText(pos, "+" .. Format.Number(value) .. " 🪙", C.Gold)
 	end)
 	Remotes.Event("ClickFx").OnClientEvent:Connect(function(worldPos: Vector3, value: number)
 		local cam = Workspace.CurrentCamera
 		local screen, visible = cam:WorldToViewportPoint(worldPos)
 		if visible then
 			Lib.sound("Salvage", 0.3)
-			floatText(Vector2.new(screen.X, screen.Y), "+" .. Format.Number(value) .. " 🔩", C.Gold)
+			floatText(Vector2.new(screen.X, screen.Y), "+" .. Format.Number(value) .. " 🪙", C.Gold)
 		end
 	end)
 

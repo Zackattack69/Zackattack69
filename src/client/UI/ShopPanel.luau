@@ -39,12 +39,12 @@ local function itemCard(parent: Instance, product: Products.Product, order: numb
 	local data = State.data
 	local owned = product.kind == "Gamepass" and data and Economy.HasPass(data, product.key)
 	local size = if big then UDim2.fromOffset(420, 300) else UDim2.fromOffset(200, 260)
-	local card = Lib.new("Frame", { Size = size, BackgroundColor3 = C.Card, LayoutOrder = order, Parent = parent })
+	local card = Lib.card(nil, { Size = size, BackgroundColor3 = C.Card, LayoutOrder = order, Parent = parent })
 	Lib.corner(card, 18)
 	Lib.stroke(card, Color3.fromRGB(10, 10, 16), 3)
 	local art = Lib.new("Frame", { Size = UDim2.new(1, -16, 0, if big then 150 else 110), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = Color3.new(1, 1, 1), Parent = card })
 	Lib.corner(art, 14)
-	local tabColor = if product.kind == "Gamepass" then C.Gold elseif product.tab == "Currency" then C.Scrap elseif product.tab == "Styles" then C.Nova else C.Green
+	local tabColor = if product.kind == "Gamepass" then C.Gold elseif product.tab == "Currency" then C.Nova elseif product.tab == "Styles" then C.Pink elseif product.tab == "Crates" then C.Purple else C.Green
 	Lib.gradient(art, tabColor, tabColor:Lerp(Color3.new(0, 0, 0), 0.55), 45)
 	Lib.label({ Text = product.icon, Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = false, Parent = art })
 
@@ -74,7 +74,7 @@ local function itemCard(parent: Instance, product: Products.Product, order: numb
 end
 
 function ShopPanel.Build(): any
-	local win = Lib.window("Shop", Vector2.new(980, 620), C.Robux, Color3.fromRGB(20, 130, 70))
+	local win = Lib.window("Shop", Vector2.new(1000, 660), C.Robux, C.Green2, "🛒")
 	local body = win.body
 	local content = Lib.new("ScrollingFrame", {
 		Size = UDim2.new(1, 0, 1, -56),

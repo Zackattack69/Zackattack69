@@ -3,6 +3,7 @@
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Economy = require(Shared.Config.Economy)
+local Names = require(Shared.Config.StarWarsNames)
 local Format = require(Shared.Util.Format)
 
 local State = require(script.Parent.Parent.State)
@@ -12,13 +13,13 @@ local C = Lib.Colors
 local FoundryPanel = {}
 
 function FoundryPanel.Build(): any
-	local win = Lib.window("Foundry Upgrades", Vector2.new(700, 440), C.Green, C.Green2)
+	local win = Lib.window("Foundry Upgrades", Vector2.new(720, 480), C.Green, C.Green2, "🏭")
 	local body = win.body
 	Lib.list(body, 10)
 
 	local rows = {}
 	for i, u in Economy.Upgrades do
-		local row = Lib.new("Frame", { Size = UDim2.new(1, 0, 0, 104), BackgroundColor3 = C.Card, LayoutOrder = i, Parent = body })
+		local row = Lib.card(nil, { Size = UDim2.new(1, 0, 0, 104), BackgroundColor3 = C.Card, LayoutOrder = i, Parent = body })
 		Lib.corner(row, 16)
 		Lib.label({ Text = u.icon, Size = UDim2.fromOffset(80, 80), Position = UDim2.fromOffset(10, 12), Stroke = false, Parent = row })
 		local name = Lib.label({ Text = u.name, Size = UDim2.new(1, -330, 0, 34), Position = UDim2.fromOffset(100, 12), TextXAlignment = Enum.TextXAlignment.Left, Parent = row })
@@ -55,7 +56,7 @@ function FoundryPanel.Build(): any
 				Lib.recolor(r.btn, C.Grey, C.Grey2)
 			else
 				local cost = Economy.UpgradeCost(u.id, level, data.rebirths)
-				r.btn.Text = "🔩 " .. Format.Number(cost)
+				r.btn.Text = Names.CurrencyIcon.Scrap .. " " .. Format.Number(cost)
 				local ok = data.scrap >= cost
 				Lib.recolor(r.btn, if ok then C.Green else C.Grey, if ok then C.Green2 else C.Grey2)
 			end

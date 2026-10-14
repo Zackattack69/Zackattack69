@@ -16,6 +16,7 @@ export type Crate = {
 	cost: number,
 	odds: { [string]: number }, -- rarity -> weight
 	mythicChance: number, -- extra flat chance to upgrade into a Mythic (0.001 = 0.1%)
+	iconicChance: number, -- extra flat chance to upgrade into an Iconic
 	color: Color3,
 	description: string,
 }
@@ -25,6 +26,7 @@ Crates.ById = {} :: { [string]: Crate }
 Crates.ByWorld = {} :: { [number]: { Crate } }
 
 Crates.MYTHIC_CHANCE = 0.001 -- 0.1% in ANY crate (Design Doc §5.1)
+Crates.ICONIC_CHANCE = 0.0002 -- 0.02% (1 in 5,000) in ANY crate
 
 local function register(c: Crate)
 	Crates.ById[c.id] = c
@@ -37,45 +39,48 @@ end
 for wi, world in Worlds.List do
 	register({
 		id = "W" .. wi .. "_Salvage",
-		name = world.name .. " Salvage Crate",
+		name = "Salvage Crate",
 		kind = "Salvage",
 		world = wi,
 		currency = "Scrap",
 		cost = 60 * 10 ^ (wi - 1),
 		odds = { Common = 75, Uncommon = 25 },
 		mythicChance = Crates.MYTHIC_CHANCE,
+		iconicChance = Crates.ICONIC_CHANCE,
 		color = Color3.fromRGB(90, 170, 255),
 		description = "Common & Uncommon droids from " .. world.name .. ".",
 	})
 	register({
 		id = "W" .. wi .. "_Nova",
-		name = world.name .. " Nova Crate",
+		name = "Aura Crate",
 		kind = "Nova",
 		world = wi,
 		currency = "Nova",
 		cost = 15 + 10 * (wi - 1),
 		odds = { Uncommon = 20, Rare = 60, Epic = 20 },
 		mythicChance = Crates.MYTHIC_CHANCE,
+		iconicChance = Crates.ICONIC_CHANCE,
 		color = Color3.fromRGB(170, 90, 255),
-		description = "Rare & Epic droids. Paid with Nova Crystals.",
+		description = "Rare & Epic droids. Paid with Aura.",
 	})
 	register({
 		id = "W" .. wi .. "_Relic",
-		name = world.name .. " Relic Crate",
+		name = "Imperial Vault",
 		kind = "Relic",
 		world = wi,
 		currency = "Nova",
 		cost = 60 + 30 * (wi - 1),
 		odds = { Rare = 40, Epic = 45, Legendary = 15 },
 		mythicChance = Crates.MYTHIC_CHANCE,
+		iconicChance = Crates.ICONIC_CHANCE,
 		color = Color3.fromRGB(255, 190, 40),
-		description = "Map-exclusive Legendaries live here.",
+		description = "This planet's named Legendaries live here.",
 	})
 end
 
 -- Guaranteed-rarity crates: granted by rebirths and Robux purchases. They roll
 -- from the opener's current world (Mythic pulls from the global pool).
-for _, rarityName in { "Common", "Rare", "Epic", "Legendary", "Mythic" } do
+for _, rarityName in { "Common", "Rare", "Epic", "Legendary", "Mythic", "Iconic" } do
 	local r = Rarities.Get(rarityName)
 	register({
 		id = "Guaranteed_" .. rarityName,
@@ -84,7 +89,8 @@ for _, rarityName in { "Common", "Rare", "Epic", "Legendary", "Mythic" } do
 		currency = nil,
 		cost = 0,
 		odds = if rarityName == "Common" then { Common = 75, Uncommon = 25 } else { [rarityName] = 1 },
-		mythicChance = if rarityName == "Mythic" then 0 else Crates.MYTHIC_CHANCE,
+		mythicChance = if rarityName == "Mythic" or rarityName == "Iconic" then 0 else Crates.MYTHIC_CHANCE,
+		iconicChance = if rarityName == "Iconic" then 0 else Crates.ICONIC_CHANCE,
 		color = r.color,
 		description = if rarityName == "Common"
 			then "A free Salvage Crate from your current world."
@@ -122,7 +128,10 @@ function Crates.Roll(crate: Crate, world: number, rng: Random, luck: number?, fo
 	local luckMult = luck or 1
 	local rarityName: string
 
-	if crate.mythicChance > 0 and rng:NextNumber() < crate.mythicChance * luckMult then
+	local jackpot = rng:NextNumber()
+	if crate.iconicChance > 0 and jackpot < crate.iconicChance * luckMult then
+		rarityName = "Iconic"
+	elseif crate.mythicChance > 0 and jackpot < (crate.iconicChance + crate.mythicChance) * luckMult then
 		rarityName = "Mythic"
 	else
 		local odds, total = Crates.EffectiveOdds(crate, luckMult)

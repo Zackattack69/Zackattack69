@@ -12,7 +12,7 @@ local Economy = require(Shared.Config.Economy)
 local Quests = require(Shared.Config.Quests)
 local Remotes = require(Shared.Remotes)
 
-local STORE_NAME = "DroidFoundry_v1"
+local STORE_NAME = "DroidFoundry_v2" -- v2: new brainrot roster (old droid IDs are incompatible)
 local AUTOSAVE_INTERVAL = 90
 local LOCK_EXPIRY = 300
 local MAX_RECEIPTS = 60

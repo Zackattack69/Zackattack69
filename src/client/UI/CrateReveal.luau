@@ -113,7 +113,7 @@ function CrateReveal.Fireworks(parent: Instance?)
 end
 
 local function revealSound(rarity: string)
-	if rarity == "Mythic" then
+	if rarity == "Mythic" or rarity == "Iconic" then
 		Lib.sound("RevealMythic", 0.8)
 	elseif rarity == "Legendary" then
 		Lib.sound("RevealLegendary", 0.7)
@@ -197,7 +197,7 @@ function CrateReveal.Play(result: any, onDone: (() -> ())?)
 	vf.CurrentCamera = cam
 	cam.CFrame = CFrame.lookAt(Vector3.new(0, 4, -16), Vector3.new(0, 1.5, 0))
 
-	local title = Lib.label({ Text = "TAP TO CRACK!", Size = UDim2.new(0.8, 0, 0, 60), Position = UDim2.fromScale(0.5, 0.8), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 46, Parent = overlay })
+	local title = Lib.label({ Text = "TAP TO CRACK!", Font = Lib.FontTitle, Size = UDim2.new(0.8, 0, 0, 60), Position = UDim2.fromScale(0.5, 0.8), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 46, Parent = overlay })
 	local subtitle = Lib.label({ Text = "", Size = UDim2.new(0.8, 0, 0, 36), Position = UDim2.fromScale(0.5, 0.87), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 46, Parent = overlay })
 
 	-- 1. crate drops in
@@ -288,8 +288,24 @@ function CrateReveal.Play(result: any, onDone: (() -> ())?)
 	subtitle.Text = string.upper(rarity.name) .. (if result.isNew then "  •  NEW!" else "")
 	subtitle.TextColor3 = rarity.color
 	confetti(overlay, if rarity.index >= 4 then 60 else 20, { rarity.color, rarity.color2, Color3.new(1, 1, 1) })
-	if rarity.name == "Mythic" then
+	if rarity.name == "Mythic" or rarity.name == "Iconic" then
 		CrateReveal.Fireworks(overlay)
+	end
+	if rarity.name == "Iconic" then
+		-- the biggest moment in the game: rainbow screen pulse + giant banner
+		local wow = Lib.label({ Text = "✨ ICONIC DROID! ✨", Font = Lib.FontTitle, Size = UDim2.new(0.9, 0, 0, 90), Position = UDim2.fromScale(0.5, 0.12), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 47, Parent = overlay })
+		local ws = Lib.new("UIScale", { Scale = 0.2, Parent = wow })
+		Lib.tween(ws, 0.7, { Scale = 1 }, Enum.EasingStyle.Elastic)
+		task.spawn(function()
+			local t = 0
+			while wow.Parent do
+				t += task.wait()
+				wow.TextColor3 = Color3.fromHSV((t * 0.6) % 1, 0.7, 1)
+			end
+		end)
+		for k = 1, 3 do
+			task.delay(k * 0.35, flash, overlay, Color3.fromHSV(k / 3, 0.6, 1), 0.5)
+		end
 	end
 
 	-- 4. style reveal — a SEPARATE second flash
@@ -297,26 +313,23 @@ function CrateReveal.Play(result: any, onDone: (() -> ())?)
 		task.wait(if quick then 0.5 else 1.3)
 		flash(overlay, style.color, 0.8)
 		Lib.sound(if style.name == "Rainbow" then "StyleRainbow" else "StyleShing", 0.8)
-		-- "coating" sweep: parts flip to the style one by one, top to bottom
-		local parts = {}
-		for _, p in model:GetDescendants() do
-			if p:IsA("BasePart") and p.Name ~= "Root" then
-				table.insert(parts, p)
-			end
-		end
-		table.sort(parts, function(a, b)
-			return a.Position.Y > b.Position.Y
-		end)
+		-- "coating" sweep: parts flip to the style one by one, top to bottom.
+		-- Both models are built identically, so children line up by index.
 		local styled = DroidModel.Build(droid.id, style.name)
-		local styledByName = {}
-		for _, p in styled:GetDescendants() do
-			if p:IsA("BasePart") then
-				styledByName[p.Name] = p
+		local styledParts = styled:GetChildren()
+		local pairsList = {}
+		for i, p in model:GetChildren() do
+			local s = styledParts[i]
+			if p:IsA("BasePart") and p.Name ~= "Root" and s and s:IsA("BasePart") then
+				table.insert(pairsList, { p = p, s = s })
 			end
 		end
-		for _, p in parts do
-			local s = styledByName[p.Name]
-			if s then
+		table.sort(pairsList, function(a, b)
+			return a.p.Position.Y > b.p.Position.Y
+		end)
+		for _, pair in pairsList do
+			local p, s = pair.p, pair.s
+			do
 				p.Material = s.Material
 				p.Transparency = s.Transparency
 				p.Reflectance = s.Reflectance
@@ -333,7 +346,7 @@ function CrateReveal.Play(result: any, onDone: (() -> ())?)
 		subtitle.Text = string.upper(style.name) .. " " .. string.upper(rarity.name) .. "  (+" .. math.floor(style.bonus * 100) .. "%)" .. (if result.isNew then "  •  NEW!" else "")
 		subtitle.TextColor3 = style.color
 		confetti(overlay, 50, { style.color, Color3.new(1, 1, 1) })
-		if style.name == "Rainbow" and rarity.name == "Mythic" then
+		if style.name == "Rainbow" and rarity.index >= Rarities.Get("Mythic").index then
 			CrateReveal.Fireworks(overlay)
 		end
 	end
@@ -343,7 +356,7 @@ function CrateReveal.Play(result: any, onDone: (() -> ())?)
 
 	-- wait for dismiss
 	task.wait(0.6)
-	local hint = Lib.label({ Text = "tap to continue", Size = UDim2.new(0.5, 0, 0, 26), Position = UDim2.fromScale(0.5, 0.93), AnchorPoint = Vector2.new(0.5, 0.5), TextColor3 = Lib.Colors.SubText, ZIndex = 46, Parent = overlay })
+	local hint = Lib.label({ Text = "tap to continue", Size = UDim2.new(0.5, 0, 0, 26), Position = UDim2.fromScale(0.5, 0.93), AnchorPoint = Vector2.new(0.5, 0.5), TextColor3 = Color3.fromRGB(200, 210, 240), ZIndex = 46, Parent = overlay })
 	local _ = hint
 	local done = false
 	local c2 = overlay.Activated:Connect(function()

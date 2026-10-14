@@ -1,24 +1,25 @@
 --!strict
--- Rarity tiers (Design Doc §5.1). Order matters: index 1 = lowest.
+-- Rarity tiers. Order matters: index 1 = lowest. "Iconic" is reserved for the
+-- famous, named droids from the films and shows.
 
 export type Rarity = {
 	name: string,
 	index: number,
 	color: Color3,
 	color2: Color3, -- secondary gradient color for UI
-	count: number, -- how many droids of this rarity exist in the 300 roster
 	multiplier: number,
 }
 
 local Rarities = {}
 
 Rarities.List = {
-	{ name = "Common", color = Color3.fromRGB(176, 182, 192), color2 = Color3.fromRGB(120, 126, 138), count = 90, multiplier = 1 },
-	{ name = "Uncommon", color = Color3.fromRGB(92, 220, 110), color2 = Color3.fromRGB(34, 150, 70), count = 75, multiplier = 2.5 },
-	{ name = "Rare", color = Color3.fromRGB(70, 160, 255), color2 = Color3.fromRGB(30, 80, 210), count = 60, multiplier = 6 },
-	{ name = "Epic", color = Color3.fromRGB(180, 90, 255), color2 = Color3.fromRGB(100, 30, 190), count = 45, multiplier = 15 },
-	{ name = "Legendary", color = Color3.fromRGB(255, 200, 50), color2 = Color3.fromRGB(230, 120, 20), count = 24, multiplier = 40 },
-	{ name = "Mythic", color = Color3.fromRGB(255, 60, 80), color2 = Color3.fromRGB(255, 120, 255), count = 6, multiplier = 120 },
+	{ name = "Common", color = Color3.fromRGB(190, 196, 208), color2 = Color3.fromRGB(128, 136, 152), multiplier = 1 },
+	{ name = "Uncommon", color = Color3.fromRGB(110, 230, 120), color2 = Color3.fromRGB(40, 160, 75), multiplier = 2.5 },
+	{ name = "Rare", color = Color3.fromRGB(80, 170, 255), color2 = Color3.fromRGB(35, 90, 220), multiplier = 6 },
+	{ name = "Epic", color = Color3.fromRGB(190, 100, 255), color2 = Color3.fromRGB(110, 40, 200), multiplier = 15 },
+	{ name = "Legendary", color = Color3.fromRGB(255, 205, 60), color2 = Color3.fromRGB(240, 125, 20), multiplier = 40 },
+	{ name = "Mythic", color = Color3.fromRGB(255, 70, 90), color2 = Color3.fromRGB(170, 20, 60), multiplier = 120 },
+	{ name = "Iconic", color = Color3.fromRGB(70, 235, 255), color2 = Color3.fromRGB(255, 225, 90), multiplier = 400 },
 } :: { any }
 
 Rarities.ByName = {} :: { [string]: Rarity }
