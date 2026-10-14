@@ -84,7 +84,7 @@ local function spawnRainTung()
 	local to = Layout.RandomCorridorPoint(rng)
 	local from = to + Vector3.new(0, 70, 0)
 	local m = TungModel.Build(t.id, mut, { plate = "pad" })
-	m:ScaleTo(0.7)
+	m:ScaleTo(m:GetScale() * 0.7)
 	m.Name = "RainTung"
 	m:PivotTo(CFrame.new(from) * CFrame.Angles(0, rng:NextNumber(0, 6.28), 0))
 	-- a little parachute-ish sparkle while falling

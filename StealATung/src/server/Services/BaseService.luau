@@ -588,14 +588,15 @@ function hookButtons(st: BaseState)
 			continue
 		end
 		local slot = b:GetAttribute("Slot") :: number
-		local function tryCollect(player: Player)
+		-- standing on the button collects every 1.5 s; a tap/click collects right away
+		local function tryCollect(player: Player, debounce: number)
 			local owner = st.owner
 			if owner == nil or owner ~= player then
 				return
 			end
 			local t = lastTouch[player] or {}
 			lastTouch[player] = t
-			if os.clock() - (t[slot] or 0) < 0.6 then
+			if os.clock() - (t[slot] or 0) < debounce then
 				return
 			end
 			t[slot] = os.clock()
@@ -605,12 +606,14 @@ function hookButtons(st: BaseState)
 			local character = hit.Parent
 			local player = character and Players:GetPlayerFromCharacter(character)
 			if player then
-				tryCollect(player)
+				tryCollect(player, 1.5)
 			end
 		end)
 		local cd = b:FindFirstChildOfClass("ClickDetector")
 		if cd then
-			cd.MouseClick:Connect(tryCollect)
+			cd.MouseClick:Connect(function(player)
+				tryCollect(player, 0.3)
+			end)
 		end
 	end
 end

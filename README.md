@@ -1,5 +1,9 @@
 # Droid Foundry (Brainrot Galaxy Edition)
 
+> **Two games live in this repo:**
+> - **Droid Foundry** (this README), in `src/` with the root `default.project.json`
+> - **[Steal a Tung](StealATung/README.md)**, a tycoon-heist game, in `StealATung/` with its own `default.project.json`
+
 A brainrot space-opera droid-collecting simulator for Roblox. You scavenge junk planets, build a droid foundry, and open crates to collect **330 droids**, from Mouse Droids up to **12 ICONIC droids** like **R2-67, TUNG-3PO, IG-69 and BB-Ate**. You also rebirth for multipliers and jump to hyperspace across **8 planets**. Servers hold up to 10 players.
 
 > **About names:** every droid, planet, title and currency name lives in one file, [`src/shared/Config/StarWarsNames.luau`](src/shared/Config/StarWarsNames.luau). The famous droids are parody names on purpose. Roblox can remove games that use real Disney/Lucasfilm names, so if the game ever gets flagged, rename the entries in that file and everything in the game updates.

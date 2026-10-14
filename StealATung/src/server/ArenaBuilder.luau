@@ -137,6 +137,8 @@ local function setupLighting()
 	rays.Spread = 0.6
 	rays.Parent = Lighting
 
+	-- a gentle wind makes the clouds drift and the grass blades sway
+	Workspace.GlobalWind = Vector3.new(6, 0, 3)
 	local terrain = Workspace.Terrain
 	local clouds = terrain:FindFirstChildOfClass("Clouds") or Instance.new("Clouds")
 	clouds.Cover = 0.55

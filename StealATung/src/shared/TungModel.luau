@@ -424,7 +424,7 @@ function TungModel.Build(id: string, mut: string?, opts: BuildOpts?): Model
 		part(model, "Foot", BLOCK, Vector3.new(0.85, 0.45, 1.2), CFrame.new(sx * 0.55, 0.23, -0.18), dark, skinMat)
 	end
 	-- the log
-	local body = sk(part(model, "Body", CYL, Vector3.new(4.6, 2.6, 2.6), CFrame.new(0, 4.1, 0) * VERT, skinColor, skinMat, { CastShadow = true }))
+	local body = sk(part(model, "Body", CYL, Vector3.new(4.6, 2.6, 2.6), CFrame.new(0, 4.1, 0) * VERT, skinColor, skinMat, { CastShadow = true, CanQuery = true }))
 	sk(part(model, "TopRing", CYL, Vector3.new(0.1, 2.42, 2.42), CFrame.new(0, 6.42, 0) * VERT, skinColor:Lerp(WOOD_LIGHT, 0.6), skinMat))
 	part(model, "TopCore", CYL, Vector3.new(0.1, 1.3, 1.3), CFrame.new(0, 6.44, 0) * VERT, skinColor:Lerp(WOOD_DARK, 0.4), skinMat)
 

@@ -243,6 +243,7 @@ local function fullSnapshot(player: Player, data: any): any
 	snap.login = data.login
 	snap.quests = data.quests
 	snap.settings = data.settings
+	snap.flags = data.flags
 	snap.full = true
 	return snap
 end
