@@ -102,16 +102,18 @@ end
 
 -- Lighting / sky: bright, saturated and cheerful ---------------------------------------------------
 local function setupLighting()
-	Lighting.ClockTime = 14
-	Lighting.Brightness = 3
-	Lighting.GeographicLatitude = 20
-	Lighting.Ambient = Color3.fromRGB(150, 150, 170)
-	Lighting.OutdoorAmbient = Color3.fromRGB(190, 190, 205)
-	Lighting.EnvironmentDiffuseScale = 0.25
-	Lighting.EnvironmentSpecularScale = 0.25
+	-- softer than a midday sun: lower brightness + exposure, gentle haze, light bloom
+	Lighting.ClockTime = 13
+	Lighting.Brightness = 1.6
+	Lighting.ExposureCompensation = -0.25
+	Lighting.GeographicLatitude = 25
+	Lighting.Ambient = Color3.fromRGB(90, 90, 105)
+	Lighting.OutdoorAmbient = Color3.fromRGB(125, 125, 140)
+	Lighting.EnvironmentDiffuseScale = 0.5
+	Lighting.EnvironmentSpecularScale = 0.3
 	Lighting.GlobalShadows = true
 	pcall(function()
-		(Lighting :: any).ShadowSoftness = 0.35
+		(Lighting :: any).ShadowSoftness = 0.4
 	end)
 	for _, c in Lighting:GetChildren() do
 		if c:IsA("Sky") or c:IsA("Atmosphere") or c:IsA("PostEffect") then
@@ -120,34 +122,33 @@ local function setupLighting()
 	end
 	local sky = Instance.new("Sky")
 	sky.StarCount = 4000
-	sky.SunAngularSize = 22
-	sky.MoonAngularSize = 14
+	sky.SunAngularSize = 18
+	sky.MoonAngularSize = 12
 	sky.CelestialBodiesShown = true
 	sky.Parent = Lighting
 
 	local atmo = Instance.new("Atmosphere")
-	atmo.Density = 0.12
-	atmo.Offset = 0
-	atmo.Color = Color3.fromRGB(170, 215, 255)
-	atmo.Decay = Color3.fromRGB(100, 170, 255)
+	atmo.Density = 0.3
+	atmo.Offset = 0.1
+	atmo.Color = Color3.fromRGB(190, 215, 245)
+	atmo.Decay = Color3.fromRGB(110, 140, 190)
 	atmo.Glare = 0
-	atmo.Haze = 0
+	atmo.Haze = 0.5
 	atmo.Parent = Lighting
 
 	local bloom = Instance.new("BloomEffect")
-	bloom.Intensity = 0.7
-	bloom.Size = 22
-	bloom.Threshold = 1.15
+	bloom.Intensity = 0.25
+	bloom.Size = 20
+	bloom.Threshold = 2
 	bloom.Parent = Lighting
 
 	local cc = Instance.new("ColorCorrectionEffect")
 	cc.Name = "Grade"
-	cc.Saturation = 0.32
-	cc.Contrast = 0.1
-	cc.Brightness = 0.03
+	cc.Saturation = 0.12
+	cc.Contrast = 0.06
+	cc.Brightness = -0.02
 	cc.Parent = Lighting
 
-	-- a gentle wind for flags and particles
 	Workspace.GlobalWind = Vector3.new(6, 0, 3)
 	local clouds = Workspace.Terrain:FindFirstChildOfClass("Clouds")
 	if clouds then
@@ -180,43 +181,9 @@ local function buildGround(arena: Instance)
 	-- round plaza under the pillar
 	P(g, { Name = "Plaza", Shape = CYL, Size = Vector3.new(0.2, 46, 46), CFrame = CFrame.new(0, 0.02, 0) * VERT, Color = S.Path, Material = M.SmoothPlastic })
 	P(g, { Name = "PlazaRing", Shape = CYL, Size = Vector3.new(0.21, 50, 50), CFrame = CFrame.new(0, 0.01, 0) * VERT, Color = Color3.fromRGB(255, 150, 70), Material = M.SmoothPlastic })
-	-- big cartoon hills outside the walls so the horizon isn't empty
-	local rng = Random.new(42)
-	local hillColors = { Color3.fromRGB(90, 200, 70), Color3.fromRGB(70, 180, 80), Color3.fromRGB(120, 220, 90) }
-	for _ = 1, 24 do
-		local side = rng:NextInteger(1, 4)
-		local x, z
-		if side <= 2 then
-			x = (if side == 1 then -1 else 1) * rng:NextNumber(hx + 60, hx + 160)
-			z = rng:NextNumber(-hz - 100, hz + 100)
-		else
-			z = (if side == 3 then -1 else 1) * rng:NextNumber(hz + 60, hz + 160)
-			x = rng:NextNumber(-hx - 100, hx + 100)
-		end
-		local r = rng:NextNumber(60, 120)
-		P(g, { Name = "Hill", Shape = BALL, Size = Vector3.new(r, r, r), CFrame = CFrame.new(x, -r * 0.28, z), Color = hillColors[rng:NextInteger(1, #hillColors)], Material = M.SmoothPlastic, CanCollide = false, CastShadow = false })
-	end
 end
 
 -- Walls & decoration --------------------------------------------------------------------------------------
-local LEAF_COLORS = { Color3.fromRGB(80, 200, 70), Color3.fromRGB(110, 225, 80), Color3.fromRGB(60, 180, 90), Color3.fromRGB(255, 150, 200) }
-
-local function buildTree(parent: Instance, at: Vector3, rng: Random)
-	local m = model(parent, "Tree")
-	local h = rng:NextNumber(8, 13)
-	P(m, { Name = "Trunk", Shape = CYL, Size = Vector3.new(h, 2.2, 2.2), CFrame = CFrame.new(at + Vector3.new(0, h / 2, 0)) * VERT, Color = S.Trunk, Material = M.SmoothPlastic })
-	local leaf = LEAF_COLORS[rng:NextInteger(1, #LEAF_COLORS)]
-	local s = rng:NextNumber(10, 14)
-	P(m, { Name = "Leaves", Shape = BALL, Size = Vector3.new(s, s, s), CFrame = CFrame.new(at + Vector3.new(0, h + s * 0.35, 0)), Color = leaf, Material = M.SmoothPlastic, CanCollide = false })
-	P(m, { Name = "Leaves2", Shape = BALL, Size = Vector3.new(s * 0.7, s * 0.7, s * 0.7), CFrame = CFrame.new(at + Vector3.new(s * 0.35, h + s * 0.15, s * 0.2)), Color = leaf:Lerp(Color3.new(1, 1, 1), 0.12), Material = M.SmoothPlastic, CanCollide = false })
-	if rng:NextNumber() < 0.4 then
-		for k = 1, 4 do
-			local a = k * 1.6
-			P(m, { Name = "Fruit", Shape = BALL, Size = Vector3.new(1.2, 1.2, 1.2), CFrame = CFrame.new(at + Vector3.new(math.cos(a) * s * 0.48, h + s * 0.3, math.sin(a) * s * 0.48)), Color = Color3.fromRGB(255, 70, 80), Material = M.SmoothPlastic, CanCollide = false })
-		end
-	end
-end
-
 local FLOWER_COLORS = { Color3.fromRGB(255, 80, 130), Color3.fromRGB(255, 220, 50), Color3.fromRGB(160, 110, 255), Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 140, 50), Color3.fromRGB(80, 200, 255) }
 
 local function buildFlowers(parent: Instance, at: Vector3, rng: Random)
@@ -249,58 +216,39 @@ end
 local function buildWalls(arena: Instance)
 	local walls = folder(arena, "Walls")
 	local hx, hz = Layout.ARENA_HALF_X, Layout.ARENA_HALF_Z
+	local H = Layout.WALL_HEIGHT -- about 10 Roblox characters tall
+	local grey = Color3.fromRGB(150, 154, 166)
+	local dark = Color3.fromRGB(108, 112, 126)
+	local light = Color3.fromRGB(178, 182, 194)
 	local sides: { { cf: CFrame, len: number } } = {
-		{ cf = CFrame.new(0, 0, -hz - 2), len = hx * 2 + 8 },
-		{ cf = CFrame.new(0, 0, hz + 2), len = hx * 2 + 8 },
-		{ cf = CFrame.new(-hx - 2, 0, 0) * CFrame.Angles(0, math.rad(90), 0), len = hz * 2 + 8 },
-		{ cf = CFrame.new(hx + 2, 0, 0) * CFrame.Angles(0, math.rad(90), 0), len = hz * 2 + 8 },
+		{ cf = CFrame.new(0, 0, -hz - 3), len = hx * 2 + 12 },
+		{ cf = CFrame.new(0, 0, hz + 3), len = hx * 2 + 12 },
+		{ cf = CFrame.new(-hx - 3, 0, 0) * CFrame.Angles(0, math.rad(90), 0), len = hz * 2 + 12 },
+		{ cf = CFrame.new(hx + 3, 0, 0) * CFrame.Angles(0, math.rad(90), 0), len = hz * 2 + 12 },
 	}
 	for _, s in sides do
 		local cf, len = s.cf, s.len
-		P(walls, { Name = "Hedge", Size = Vector3.new(len, 5.5, 4.4), CFrame = cf * CFrame.new(0, 2.75, 0), Color = S.Hedge, Material = M.SmoothPlastic })
-		-- fluffy bush tops
-		for x = -len / 2 + 2.5, len / 2 - 2.5, 5 do
-			P(walls, { Name = "Bush", Shape = BALL, Size = Vector3.new(5.6, 5, 5.6), CFrame = cf * CFrame.new(x, 5.4, 0), Color = if math.floor(x / 5) % 2 == 0 then S.Hedge else S.HedgeLight, Material = M.SmoothPlastic, CanCollide = false, CastShadow = false })
-		end
-		-- white picket fence on top
-		P(walls, { Name = "Rail", Size = Vector3.new(len, 0.5, 0.5), CFrame = cf * CFrame.new(0, 9.6, 0), Color = S.Fence, Material = M.SmoothPlastic })
-		P(walls, { Name = "Rail", Size = Vector3.new(len, 0.5, 0.5), CFrame = cf * CFrame.new(0, 8.4, 0), Color = S.Fence, Material = M.SmoothPlastic })
-		for x = -len / 2 + 2, len / 2 - 2, 6 do
-			P(walls, { Name = "Picket", Size = Vector3.new(0.9, 3.8, 0.6), CFrame = cf * CFrame.new(x, 9.2, 0), Color = S.Fence, Material = M.SmoothPlastic })
-			P(walls, { Name = "PicketTip", Size = Vector3.new(0.64, 0.64, 0.6), CFrame = cf * CFrame.new(x, 11.1, 0) * CFrame.Angles(0, 0, math.rad(45)), Color = S.Fence, Material = M.SmoothPlastic })
+		P(walls, { Name = "Wall", Size = Vector3.new(len, H, 6), CFrame = cf * CFrame.new(0, H / 2, 0), Color = grey, Material = M.SmoothPlastic })
+		P(walls, { Name = "Skirting", Size = Vector3.new(len, 4, 6.6), CFrame = cf * CFrame.new(0, 2, 0), Color = dark, Material = M.SmoothPlastic })
+		P(walls, { Name = "Cap", Size = Vector3.new(len + 2, 2, 7.6), CFrame = cf * CFrame.new(0, H + 1, 0), Color = light, Material = M.SmoothPlastic })
+		-- pilasters every 40 studs so the wall doesn't look flat
+		for x = -len / 2 + 20, len / 2 - 20, 40 do
+			P(walls, { Name = "Pilaster", Size = Vector3.new(4, H, 7.2), CFrame = cf * CFrame.new(x, H / 2, 0), Color = dark, Material = M.SmoothPlastic })
 		end
 		-- invisible wall so nobody can leave the arena
-		P(walls, { Name = "Barrier", Size = Vector3.new(len, 80, 2), CFrame = cf * CFrame.new(0, 40, 0), Transparency = 1, CanQuery = false })
+		P(walls, { Name = "Barrier", Size = Vector3.new(len, 120, 2), CFrame = cf * CFrame.new(0, 60, 0), Transparency = 1, CanQuery = false })
 	end
 
 	local deco = folder(arena, "Decor")
 	local rng = Random.new(7)
-	for z = -hz - 8, hz + 8, 26 do
-		buildTree(deco, Vector3.new(-hx - 14 - rng:NextNumber(0, 10), 0, z + rng:NextNumber(-5, 5)), rng)
-		buildTree(deco, Vector3.new(hx + 14 + rng:NextNumber(0, 10), 0, z + rng:NextNumber(-5, 5)), rng)
+	local lx = Layout.CORRIDOR_HALF - 6
+	for _, z in { -hz + 20, -Layout.PLOT_SPACING, Layout.PLOT_SPACING, hz - 20 } do
+		buildLantern(deco, Vector3.new(-lx, 0, z))
+		buildLantern(deco, Vector3.new(lx, 0, z))
 	end
-	for x = -hx, hx, 26 do
-		buildTree(deco, Vector3.new(x + rng:NextNumber(-5, 5), 0, -hz - 14 - rng:NextNumber(0, 10)), rng)
-		buildTree(deco, Vector3.new(x + rng:NextNumber(-5, 5), 0, hz + 14 + rng:NextNumber(0, 10)), rng)
-	end
-	for x = -hx + 10, hx - 10, 16 do
-		if math.abs(x) > 14 then
-			buildFlowers(deco, Vector3.new(x, 0, -hz + 3), rng)
-			buildFlowers(deco, Vector3.new(x, 0, hz - 3), rng)
-		end
-	end
-	for _, z in { -168, -84, 84, 168 } do
-		buildLantern(deco, Vector3.new(-25, 0, z))
-		buildLantern(deco, Vector3.new(25, 0, z))
-	end
-	for _, z in { -168, 168 } do
-		for _, x in { -60, -100, 60, 100 } do
-			buildLantern(deco, Vector3.new(x, 0, z))
-		end
-	end
-	for _, z in { -150, -110, -60, -20, 20, 60, 110, 150 } do
-		buildFlowers(deco, Vector3.new(-12, 0, z), rng)
-		buildFlowers(deco, Vector3.new(12, 0, z), rng)
+	for _, z in { -hz + 30, -150, -60, 60, 150, hz - 30 } do
+		buildFlowers(deco, Vector3.new(-14, 0, z), rng)
+		buildFlowers(deco, Vector3.new(14, 0, z), rng)
 	end
 end
 
@@ -317,7 +265,7 @@ local function buildBelt(arena: Instance)
 	-- an anchored part with velocity carries anything standing on it, like a real conveyor
 	surface.AssemblyLinearVelocity = (b - a).Unit * ((b - a).Magnitude / Economy.BELT_TRAVEL)
 	for _, sx in { -1, 1 } do
-		P(belt, { Name = "Rail", Size = Vector3.new(0.7, 0.9, len), CFrame = CFrame.new(sx * (w / 2 + 0.55), top + 0.25, mid.Z), Color = S.Yellow, Material = M.Neon })
+		P(belt, { Name = "Rail", Size = Vector3.new(0.7, 0.9, len), CFrame = CFrame.new(sx * (w / 2 + 0.55), top + 0.25, mid.Z), Color = S.Yellow, Material = M.SmoothPlastic })
 		P(belt, { Name = "RailBase", Size = Vector3.new(1, 0.4, len), CFrame = CFrame.new(sx * (w / 2 + 0.55), top - 0.2, mid.Z), Color = S.Frame, Material = M.SmoothPlastic })
 	end
 	for z = a.Z - 2, b.Z + 2, 12 do
@@ -351,7 +299,7 @@ local function buildBelt(arena: Instance)
 		P(drum, { Name = "StickTip", Shape = BALL, Size = Vector3.new(1.6, 1.6, 1.6), CFrame = CFrame.new(d + Vector3.new(sx * -1.3, 13.4, 1)), Color = Color3.fromRGB(255, 120, 160), Material = M.SmoothPlastic })
 	end
 	P(drum, { Name = "Mouth", Size = Vector3.new(w + 1, 6, 2), CFrame = CFrame.new(0, top + 3, d.Z + 9.4), Color = Color3.fromRGB(20, 12, 30), Material = M.SmoothPlastic, CanCollide = false })
-	P(drum, { Name = "MouthTrim", Size = Vector3.new(w + 3, 0.8, 2.2), CFrame = CFrame.new(0, top + 6.4, d.Z + 9.4), Color = S.Yellow, Material = M.Neon, CanCollide = false })
+	P(drum, { Name = "MouthTrim", Size = Vector3.new(w + 3, 0.8, 2.2), CFrame = CFrame.new(0, top + 6.4, d.Z + 9.4), Color = S.Yellow, Material = M.SmoothPlastic, CanCollide = false })
 	local signPart = P(drum, { Name = "Sign", Size = Vector3.new(22, 5, 0.6), CFrame = CFrame.new(0, 19, d.Z + 4) * CFrame.Angles(0, math.pi, 0), Color = S.Purple, Material = M.SmoothPlastic, CanCollide = false })
 	local sg = Instance.new("SurfaceGui")
 	sg.Face = Enum.NormalId.Front
@@ -394,7 +342,7 @@ local function buildPillar(arena: Instance)
 	P(m, { Name = "Cap", Size = Vector3.new(20, 1.5, 20), CFrame = CFrame.new(c + Vector3.new(0, 36.7, 0)), Color = S.Gold, Material = M.Foil })
 	P(m, { Name = "Base", Size = Vector3.new(20, 1.2, 20), CFrame = CFrame.new(c + Vector3.new(0, 13.6, 0)), Color = S.Gold, Material = M.Foil })
 	for _, y in { 14.6, 35.6 } do
-		P(m, { Name = "NeonTrim", Size = Vector3.new(18.4, 0.5, 18.4), CFrame = CFrame.new(c + Vector3.new(0, y, 0)), Color = S.Pink, Material = M.Neon, CanCollide = false })
+		P(m, { Name = "NeonTrim", Size = Vector3.new(18.4, 0.5, 18.4), CFrame = CFrame.new(c + Vector3.new(0, y, 0)), Color = S.Pink, Material = M.SmoothPlastic, CanCollide = false })
 	end
 	local faces: { { name: string, face: Enum.NormalId } } = {
 		{ name = "BoardFront", face = Enum.NormalId.Front },

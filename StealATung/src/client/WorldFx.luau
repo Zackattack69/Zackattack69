@@ -238,8 +238,6 @@ local function onBatHit(a: Anim, pivot: CFrame)
 			Lib.sound3D("Bonk", feet, 0.9, 0.45)
 		end
 		ring(feet + Vector3.new(0, 0.1, 0), Color3.fromRGB(255, 80, 20), 3, 16, 0.6)
-	elseif a.effect == "BatTap" and near(feet, 35) then
-		Lib.sound3D("Tung", feet, 0.35, 1.1)
 	end
 end
 
@@ -278,9 +276,7 @@ local function animate(a: Anim, t: number, dt: number)
 		a.timer += dt
 		if a.timer > 2.4 then
 			a.timer = 0
-			if near(pivot.Position, 30) then
-				Lib.sound3D("Squeak", pivot.Position)
-			end
+			local _ = pivot
 		end
 	elseif e == "Drum" then
 		local drum = m:FindFirstChild("Drum") :: Model?
@@ -294,9 +290,7 @@ local function animate(a: Anim, t: number, dt: number)
 			a.timer += dt
 			if a.timer > 1 then
 				a.timer = 0
-				if near(pivot.Position, 28) then
-					Lib.sound3D("Tung", pivot.Position, 0.3, 1.6)
-				end
+				local _ = pivot
 			end
 		end
 	elseif e == "Bubble" then
@@ -312,9 +306,7 @@ local function animate(a: Anim, t: number, dt: number)
 			b.CFrame = pivot * (a.extra.bubbleRel :: CFrame) * CFrame.new(0, 0, -size * 0.4)
 			if x > 0.97 and a.state == 0 then
 				a.state = 1
-				if near(pivot.Position, 30) then
-					Lib.sound3D("Pop2", pivot.Position)
-				end
+				local _ = pivot
 			elseif x < 0.5 then
 				a.state = 0
 			end
@@ -367,9 +359,7 @@ local function animate(a: Anim, t: number, dt: number)
 			a.timer += dt
 			if a.timer > 4 then
 				a.timer = 0
-				if near(visor.Position, 25) then
-					Lib.sound3D("Beep", visor.Position)
-				end
+				local _ = visor
 			end
 		end
 	elseif e == "Glitch" then
@@ -472,8 +462,8 @@ local function animate(a: Anim, t: number, dt: number)
 		a.extra.laugh = ((a.extra.laugh :: number?) or (8 + a.phase)) - dt
 		if (a.extra.laugh :: number) <= 0 then
 			a.extra.laugh = 10 + math.random() * 8
-			if near(pivot.Position, 40) then
-				Lib.sound3D("Laugh", pivot.Position)
+			if near(pivot.Position, 18) then
+				Lib.sound3D("Laugh", pivot.Position, 0.25)
 			end
 		end
 	end

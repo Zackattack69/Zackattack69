@@ -7,6 +7,10 @@
 --   /luck <mult> [minutes]       server luck multiplier
 --   /money <amount>              give yourself money
 -- Admins: GameConfig.Admins, the place owner (or group owner), everyone in Studio.
+--
+-- Admins also get an ADMIN button in the HUD. The panel unlocks with the secret
+-- code in AdminConfig (server-only) and can give any amount of money, spawn any
+-- Tung (into your base or onto the belt) and start events.
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -19,6 +23,7 @@ local Mutations = require(Shared.Config.Mutations)
 local Tungs = require(Shared.Config.Tungs)
 local Format = require(Shared.Util.Format)
 
+local AdminConfig = require(script.Parent.Parent.AdminConfig)
 local BaseService = require(script.Parent.BaseService)
 local BeltService = require(script.Parent.BeltService)
 local EconomyService = require(script.Parent.EconomyService)
@@ -127,6 +132,93 @@ end
 
 local lastRun: { [Player]: { msg: string, t: number } } = {}
 
+-- ADMIN panel ---------------------------------------------------------------------------------
+local unlocked: { [Player]: boolean } = {}
+local attempts: { [Player]: { n: number, t: number } } = {}
+
+function AdminService.Unlock(player: Player, code: any): (boolean, any)
+	if not AdminService.IsAdmin(player) then
+		return false, "Only the owner and admins can use this"
+	end
+	local a = attempts[player]
+	if a == nil or os.clock() - a.t > 60 then
+		a = { n = 0, t = os.clock() }
+		attempts[player] = a
+	end
+	local tries = a :: { n: number, t: number }
+	tries.n += 1
+	if tries.n > 5 then
+		return false, "Too many tries, wait a minute"
+	end
+	if type(code) ~= "string" or code ~= AdminConfig.Code then
+		return false, "Wrong code"
+	end
+	unlocked[player] = true
+	return true, nil
+end
+
+local function allowed(player: Player): (boolean, string?)
+	if not AdminService.IsAdmin(player) then
+		return false, "Only the owner and admins can use this"
+	end
+	if not unlocked[player] then
+		return false, "Enter the admin code first"
+	end
+	return true, nil
+end
+
+function AdminService.GiveMoney(player: Player, amount: any): (boolean, any)
+	local ok, why = allowed(player)
+	if not ok then
+		return false, why
+	end
+	local n = if type(amount) == "number" then amount elseif type(amount) == "string" then Format.Parse(amount) else nil
+	if not n or n ~= n or n <= 0 or n == math.huge then
+		return false, "Type an amount like 1000, 2.5M or 1e15"
+	end
+	n = math.min(n, 1e300)
+	EconomyService.AddMoney(player, n)
+	EconomyService.Notify(player, "👑 +" .. Format.Money(n), "money")
+	return true, n
+end
+
+function AdminService.GiveTung(player: Player, id: any, mut: any, where: any): (boolean, any)
+	local ok, why = allowed(player)
+	if not ok then
+		return false, why
+	end
+	local t = Tungs.Get(tostring(id))
+	if not t then
+		return false, "Unknown Tung"
+	end
+	local m = parseMutation(if type(mut) == "string" then mut else nil)
+	if where == "belt" then
+		BeltService.AdminSpawn(t.id, m)
+		return true, "belt"
+	end
+	BaseService.AddTung(player, t.id, m, { source = "admin" })
+	EconomyService.Notify(player, "👑 " .. Mutations.Prefix(m) .. t.name .. " added to your base!", "success")
+	return true, "base"
+end
+
+function AdminService.StartEvent(player: Player, key: any): (boolean, any)
+	local ok, why = allowed(player)
+	if not ok then
+		return false, why
+	end
+	if key == "stop" then
+		EventService.Stop()
+		EventService.StopAdminAbuse()
+		return true, nil
+	end
+	local e = Events.ByKey[tostring(key)]
+	if not e then
+		return false, "Unknown event"
+	end
+	EventService.Start(e.key, if e.key == "AdminAbuse" then 30 * 60 else nil)
+	return true, nil
+end
+
 local function handle(player: Player, msg: string)
 	if not AdminService.IsAdmin(player) then
 		return
@@ -161,6 +253,7 @@ function AdminService.Init()
 		end)
 	end
 	local function hook(player: Player)
+		player:SetAttribute("IsAdmin", AdminService.IsAdmin(player))
 		player.Chatted:Connect(function(msg)
 			handle(player, msg)
 		end)
@@ -171,6 +264,8 @@ function AdminService.Init()
 	end
 	Players.PlayerRemoving:Connect(function(player)
 		lastRun[player] = nil
+		unlocked[player] = nil
+		attempts[player] = nil
 	end)
 end
 

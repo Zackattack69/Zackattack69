@@ -100,6 +100,18 @@ local handlers: { [string]: Handler } = {
 	TradeCancel = function(player)
 		return TradeService.Cancel(player)
 	end,
+	AdminUnlock = function(player, code)
+		return AdminService.Unlock(player, code)
+	end,
+	AdminMoney = function(player, amount)
+		return AdminService.GiveMoney(player, amount)
+	end,
+	AdminTung = function(player, id, mut, where)
+		return AdminService.GiveTung(player, id, mut, where)
+	end,
+	AdminEvent = function(player, key)
+		return AdminService.StartEvent(player, key)
+	end,
 	Sync = function(player)
 		DataService.MarkDirty(player, true)
 		BeltService.SyncTo(player)

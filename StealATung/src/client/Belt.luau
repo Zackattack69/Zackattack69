@@ -129,7 +129,7 @@ local function add(e: any)
 	items[e.id] = it
 	model.Parent = folder
 	-- spawn sound: a single knock for Common up to a full drumroll for Mythic
-	if e.belt == "main" then
+	if e.belt == "main" and t.rarity ~= "Common" and t.rarity ~= "Uncommon" then
 		Lib.sound3D("Spawn" .. t.rarity, Layout.DRUM_POS, nil, nil)
 	end
 end

@@ -48,10 +48,10 @@ end
 
 -- Bright, saturated world palette.
 Style.Colors = {
-	Grass = Color3.fromRGB(106, 214, 74),
-	Grass2 = Color3.fromRGB(88, 196, 62),
-	GrassOuter = Color3.fromRGB(96, 204, 68),
-	Path = Color3.fromRGB(255, 226, 160),
+	Grass = Color3.fromRGB(84, 168, 62),
+	Grass2 = Color3.fromRGB(74, 152, 54),
+	GrassOuter = Color3.fromRGB(78, 158, 58),
+	Path = Color3.fromRGB(212, 188, 140),
 	Hedge = Color3.fromRGB(64, 182, 70),
 	HedgeLight = Color3.fromRGB(96, 214, 84),
 	Fence = Color3.fromRGB(255, 255, 255),

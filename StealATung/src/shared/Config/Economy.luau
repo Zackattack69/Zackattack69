@@ -17,7 +17,7 @@ Economy.PADS_PER_ROW = 6
 
 -- Belt
 Economy.BELT_INTERVAL = 3 -- a new Tung every 3 s
-Economy.BELT_TRAVEL = 25 -- seconds to ride the whole belt
+Economy.BELT_TRAVEL = 20 -- each Tung rides the belt for 20 s (slow: ~10 studs/s)
 Economy.PERSONAL_BELT_INTERVAL = 30 -- Rebirth 6 perk
 Economy.BUY_HOLD = 0.5
 

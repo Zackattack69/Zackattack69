@@ -82,7 +82,7 @@ function HUD.Build(gui: ScreenGui, panels: any)
 	local friendChip, friendText = chip(topRight, 4, 270, 34, C.Cyan, C.Cyan2)
 
 	-- Left buttons ------------------------------------------------------------------------------------------------
-	local left = Lib.new("Frame", { Name = "Left", Size = UDim2.fromOffset(200, 330), Position = UDim2.new(0, 22, 0.52, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundTransparency = 1, Parent = gui })
+	local left = Lib.new("Frame", { Name = "Left", Size = UDim2.fromOffset(200, 440), Position = UDim2.new(0, 22, 0.55, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundTransparency = 1, Parent = gui })
 	Lib.hudFit(left)
 	Lib.new("UIGridLayout", { CellSize = UDim2.fromOffset(84, 84), CellPadding = UDim2.fromOffset(16, 28), SortOrder = Enum.SortOrder.LayoutOrder, Parent = left })
 	local function leftButton(icon: string, label: string, c1: Color3, c2: Color3, order: number, onClick: () -> ()): TextButton
@@ -94,6 +94,12 @@ function HUD.Build(gui: ScreenGui, panels: any)
 	local questBtn = leftButton("📜", "Quests", C.Blue, C.Blue2, 4, panels.Quests.toggle)
 	leftButton("🤝", "Trade", C.Pink, C.Pink2, 5, panels.Trade.toggle)
 	leftButton("⚙️", "Settings", C.Purple, C.Purple2, 6, panels.Settings.toggle)
+	-- ADMIN button: only visible to admins / the owner (the server sets IsAdmin)
+	local adminBtn = leftButton("👑", "Admin", C.Red, C.Red2, 7, panels.Admin.toggle)
+	adminBtn.Visible = player:GetAttribute("IsAdmin") == true
+	player:GetAttributeChangedSignal("IsAdmin"):Connect(function()
+		adminBtn.Visible = player:GetAttribute("IsAdmin") == true
+	end)
 	local questBadge = Lib.badge(questBtn)
 	local rebirthBadgeDot = Lib.badge(rebirthBtn)
 	rebirthBadgeDot.Text = "!"

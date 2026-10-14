@@ -26,6 +26,26 @@ function Format.Number(n: number): string
 	return (if neg then "-" else "") .. s .. SUFFIXES[tier + 1]
 end
 
+-- Parses "1500", "2.5K", "1M", "3.2B", "1e15", "$4 T" into a number (nil if invalid).
+function Format.Parse(text: string): number?
+	local s = string.upper((string.gsub(text, "[%s,%$]", "")))
+	local direct = tonumber(s)
+	if direct then
+		return direct
+	end
+	local num, suffix = string.match(s, "^([%d%.]+)(%a+)$")
+	local value = num and tonumber(num)
+	if not value or not suffix then
+		return nil
+	end
+	for i, sfx in SUFFIXES do
+		if string.upper(sfx) == suffix and i > 1 then
+			return value * 10 ^ ((i - 1) * 3)
+		end
+	end
+	return nil
+end
+
 function Format.Money(n: number): string
 	return "$" .. Format.Number(n)
 end
