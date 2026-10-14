@@ -44,7 +44,7 @@ local function tungTile(parent: Instance, id: string, mut: string, order: number
 end
 
 function TradePanel.Build(popupGui: ScreenGui): any
-	local win = Lib.window("Trade", Vector2.new(960, 640), Color3.fromRGB(255, 200, 230), "🤝")
+	local win = Lib.window("Trade", Vector2.new(960, 640), Lib.Colors.Pink, "🤝")
 	local body = win.body
 
 	local lobby = Lib.new("Frame", { Name = "Lobby", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = body })

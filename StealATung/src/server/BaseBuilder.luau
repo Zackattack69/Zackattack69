@@ -12,6 +12,7 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Economy = require(Shared.Config.Economy)
 local Layout = require(Shared.Config.Layout)
+local Style = require(Shared.Style)
 
 local BaseBuilder = {}
 
@@ -37,14 +38,15 @@ export type Theme = {
 }
 
 BaseBuilder.THEMES = {
-	Wood = { floor = Color3.fromRGB(126, 196, 84), floorMat = M.Grass, wall = Color3.fromRGB(176, 124, 74), wallMat = M.WoodPlanks, wallHeight = 4, post = Color3.fromRGB(118, 78, 46), postMat = M.Wood, cap = Color3.fromRGB(196, 146, 92), capMat = M.WoodPlanks, pad = Color3.fromRGB(236, 224, 196), accent = Color3.fromRGB(255, 200, 90) },
-	Stone = { floor = Color3.fromRGB(150, 150, 158), floorMat = M.Slate, wall = Color3.fromRGB(160, 160, 168), wallMat = M.Cobblestone, wallHeight = 5.5, post = Color3.fromRGB(120, 120, 130), postMat = M.Cobblestone, cap = Color3.fromRGB(185, 185, 192), capMat = M.Slate, pad = Color3.fromRGB(215, 215, 222), accent = Color3.fromRGB(120, 200, 255) },
-	Bamboo = { floor = Color3.fromRGB(226, 192, 134), floorMat = M.WoodPlanks, wall = Color3.fromRGB(150, 196, 90), wallMat = M.Wood, wallHeight = 5, post = Color3.fromRGB(110, 160, 60), postMat = M.Wood, postRound = true, cap = Color3.fromRGB(200, 40, 40), capMat = M.SmoothPlastic, pad = Color3.fromRGB(245, 230, 200), accent = Color3.fromRGB(230, 50, 50) },
-	Crystal = { floor = Color3.fromRGB(240, 226, 240), floorMat = M.Marble, wall = Color3.fromRGB(160, 230, 255), wallMat = M.Glass, wallHeight = 5, post = Color3.fromRGB(255, 120, 220), postMat = M.Neon, cap = Color3.fromRGB(190, 240, 255), capMat = M.Glass, pad = Color3.fromRGB(250, 240, 255), accent = Color3.fromRGB(255, 120, 230), wallTransparency = 0.35 },
-	Sky = { floor = Color3.fromRGB(250, 252, 255), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(170, 215, 255), wallMat = M.SmoothPlastic, wallHeight = 3, post = Color3.fromRGB(255, 255, 255), postMat = M.SmoothPlastic, postRound = true, cap = Color3.fromRGB(255, 255, 255), capMat = M.SmoothPlastic, pad = Color3.fromRGB(220, 238, 255), accent = Color3.fromRGB(110, 200, 255) },
-	Volcano = { floor = Color3.fromRGB(60, 50, 50), floorMat = M.Basalt, wall = Color3.fromRGB(70, 56, 54), wallMat = M.Basalt, wallHeight = 6, post = Color3.fromRGB(45, 36, 36), postMat = M.Basalt, cap = Color3.fromRGB(255, 110, 20), capMat = M.Neon, pad = Color3.fromRGB(110, 90, 85), accent = Color3.fromRGB(255, 120, 20) },
-	Space = { floor = Color3.fromRGB(150, 158, 172), floorMat = M.DiamondPlate, wall = Color3.fromRGB(196, 202, 214), wallMat = M.Metal, wallHeight = 5, post = Color3.fromRGB(90, 96, 110), postMat = M.Metal, cap = Color3.fromRGB(60, 220, 255), capMat = M.Neon, pad = Color3.fromRGB(70, 76, 92), accent = Color3.fromRGB(60, 220, 255) },
-	Golden = { floor = Color3.fromRGB(246, 238, 220), floorMat = M.Marble, wall = Color3.fromRGB(255, 200, 60), wallMat = M.Foil, wallHeight = 6, post = Color3.fromRGB(250, 246, 236), postMat = M.Marble, cap = Color3.fromRGB(255, 210, 70), capMat = M.Foil, pad = Color3.fromRGB(255, 236, 190), accent = Color3.fromRGB(255, 205, 60) },
+	-- bright toy-plastic palettes; materials are run through Style.Material
+	Wood = { floor = Color3.fromRGB(255, 214, 150), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(240, 150, 70), wallMat = M.SmoothPlastic, wallHeight = 4, post = Color3.fromRGB(200, 110, 50), postMat = M.SmoothPlastic, cap = Color3.fromRGB(255, 200, 70), capMat = M.SmoothPlastic, pad = Color3.fromRGB(255, 245, 220), accent = Color3.fromRGB(255, 200, 40) },
+	Stone = { floor = Color3.fromRGB(214, 220, 236), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(170, 180, 205), wallMat = M.SmoothPlastic, wallHeight = 5.5, post = Color3.fromRGB(120, 130, 165), postMat = M.SmoothPlastic, cap = Color3.fromRGB(70, 170, 255), capMat = M.Neon, pad = Color3.fromRGB(245, 248, 255), accent = Color3.fromRGB(70, 170, 255) },
+	Bamboo = { floor = Color3.fromRGB(255, 232, 180), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(120, 215, 80), wallMat = M.SmoothPlastic, wallHeight = 5, post = Color3.fromRGB(70, 170, 60), postMat = M.SmoothPlastic, postRound = true, cap = Color3.fromRGB(240, 50, 60), capMat = M.SmoothPlastic, pad = Color3.fromRGB(255, 250, 235), accent = Color3.fromRGB(255, 60, 80) },
+	Crystal = { floor = Color3.fromRGB(255, 225, 250), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(160, 230, 255), wallMat = M.Glass, wallHeight = 5, post = Color3.fromRGB(255, 110, 220), postMat = M.Neon, cap = Color3.fromRGB(110, 235, 255), capMat = M.Neon, pad = Color3.fromRGB(255, 245, 255), accent = Color3.fromRGB(255, 110, 230), wallTransparency = 0.3 },
+	Sky = { floor = Color3.fromRGB(255, 255, 255), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(130, 205, 255), wallMat = M.SmoothPlastic, wallHeight = 3, post = Color3.fromRGB(255, 255, 255), postMat = M.SmoothPlastic, postRound = true, cap = Color3.fromRGB(255, 230, 90), capMat = M.SmoothPlastic, pad = Color3.fromRGB(225, 242, 255), accent = Color3.fromRGB(80, 190, 255) },
+	Volcano = { floor = Color3.fromRGB(90, 45, 50), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(150, 40, 45), wallMat = M.SmoothPlastic, wallHeight = 6, post = Color3.fromRGB(70, 30, 35), postMat = M.SmoothPlastic, cap = Color3.fromRGB(255, 120, 20), capMat = M.Neon, pad = Color3.fromRGB(255, 200, 150), accent = Color3.fromRGB(255, 110, 20) },
+	Space = { floor = Color3.fromRGB(45, 50, 95), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(95, 105, 170), wallMat = M.SmoothPlastic, wallHeight = 5, post = Color3.fromRGB(60, 65, 120), postMat = M.SmoothPlastic, cap = Color3.fromRGB(60, 235, 255), capMat = M.Neon, pad = Color3.fromRGB(200, 215, 255), accent = Color3.fromRGB(60, 235, 255) },
+	Golden = { floor = Color3.fromRGB(255, 248, 225), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(255, 200, 40), wallMat = M.Foil, wallHeight = 6, post = Color3.fromRGB(255, 255, 255), postMat = M.SmoothPlastic, cap = Color3.fromRGB(255, 215, 60), capMat = M.Foil, pad = Color3.fromRGB(255, 240, 200), accent = Color3.fromRGB(255, 205, 40) },
 } :: { [string]: Theme }
 
 export type BuildInfo = {
@@ -61,6 +63,8 @@ type Props = { [string]: any }
 local function P(parent: Instance, props: Props): BasePart
 	local className = props.ClassName or "Part"
 	props.ClassName = nil
+	local material = props.Material
+	props.Material = nil
 	local p = Instance.new(className) :: BasePart
 	p.Anchored = true
 	p.TopSurface = Enum.SurfaceType.Smooth
@@ -68,6 +72,7 @@ local function P(parent: Instance, props: Props): BasePart
 	for k, v in props do
 		(p :: any)[k] = v
 	end
+	Style.Apply(p, material)
 	p.Parent = parent
 	return p
 end
@@ -105,8 +110,8 @@ local function label(parent: Instance, name: string, props: Props): TextLabel
 		(l :: any)[k] = v
 	end
 	local s = Instance.new("UIStroke")
-	s.Thickness = 3
-	s.Color = Color3.fromRGB(40, 25, 15)
+	s.Thickness = 4
+	s.Color = Color3.fromRGB(26, 24, 40)
 	s.Parent = l
 	l.Parent = parent
 	return l
@@ -131,6 +136,16 @@ function BaseBuilder.Build(parent: Instance, info: BuildInfo): Model
 
 	-- Floor ----------------------------------------------------------------------------------
 	P(base, { Name = "Floor", Size = Vector3.new(W2 * 2 + 2, 0.8, D), CFrame = L(0, 0, D / 2), Color = theme.floor, Material = theme.floorMat })
+	P(base, { Name = "FloorRim", Size = Vector3.new(W2 * 2 + 3.2, 0.7, D + 1.2), CFrame = L(0, -0.08, D / 2), Color = theme.accent, Material = M.SmoothPlastic })
+	-- checkerboard tiles make the floor read as a toy play-mat
+	local tile = 12
+	for tx = -W2 + tile / 2, W2 - tile / 2, tile do
+		for td = tile / 2, D - tile / 2, tile do
+			if (math.floor((tx + W2) / tile) + math.floor(td / tile)) % 2 == 0 then
+				P(base, { Name = "Tile", Size = Vector3.new(tile, 0.05, tile), CFrame = L(tx, Layout.FLOOR_TOP + 0.02, td), Color = theme.floor:Lerp(Color3.new(0, 0, 0), 0.06), Material = M.SmoothPlastic, CanCollide = false, CastShadow = false })
+			end
+		end
+	end
 
 	-- Fence ------------------------------------------------------------------------------------
 	local fence = folder(base, "Fence")
@@ -238,7 +253,8 @@ function BaseBuilder.Build(parent: Instance, info: BuildInfo): Model
 		P(base, { Name = "GatePost", Size = Vector3.new(1.8, 13, 1.8), CFrame = L(sx * (gateHalf + 1.5), 6.5 + Layout.FLOOR_TOP, 0), Color = theme.post, Material = theme.postMat })
 	end
 	P(base, { Name = "GateBeam", Size = Vector3.new(Layout.GATE_WIDTH + 5, 1.2, 1.8), CFrame = L(0, 13.2, 0), Color = trim, Material = trimMat })
-	local sign = P(base, { Name = "Sign", Size = Vector3.new(18, 6, 0.6), CFrame = L(0, 16.8, 0) * CFrame.Angles(0, math.pi, 0), Color = Color3.fromRGB(120, 80, 46), Material = M.WoodPlanks })
+	local sign = P(base, { Name = "Sign", Size = Vector3.new(18, 6, 0.6), CFrame = L(0, 16.8, 0) * CFrame.Angles(0, math.pi, 0), Color = Color3.fromRGB(40, 36, 70), Material = M.SmoothPlastic })
+	P(base, { Name = "SignFrame", Size = Vector3.new(18.8, 6.8, 0.4), CFrame = L(0, 16.8, 0.15) * CFrame.Angles(0, math.pi, 0), Color = theme.accent, Material = M.Neon })
 	local sg = Instance.new("SurfaceGui")
 	sg.Name = "SignGui"
 	sg.Face = Enum.NormalId.Front
@@ -304,9 +320,10 @@ function BaseBuilder.Build(parent: Instance, info: BuildInfo): Model
 
 	-- Rebirth Altar --------------------------------------------------------------------------------------
 	local altarCf = Layout.Altar(i, info.slots)
-	local altar = P(base, { Name = "Altar", Shape = CYL, Size = Vector3.new(1.6, 6, 6), CFrame = altarCf * CFrame.new(0, 0.8, 0) * VERT, Color = Color3.fromRGB(235, 225, 205), Material = M.Marble })
+	P(base, { Name = "AltarGlow", Shape = CYL, Size = Vector3.new(0.1, 10, 10), CFrame = altarCf * CFrame.new(0, 0.05, 0) * VERT, Color = Color3.fromRGB(255, 220, 80), Material = M.Neon, Transparency = 0.4, CanCollide = false })
+	local altar = P(base, { Name = "Altar", Shape = CYL, Size = Vector3.new(1.6, 6, 6), CFrame = altarCf * CFrame.new(0, 0.8, 0) * VERT, Color = Color3.fromRGB(255, 255, 255), Material = M.SmoothPlastic })
 	P(base, { Name = "AltarStep", Shape = CYL, Size = Vector3.new(0.6, 8, 8), CFrame = altarCf * CFrame.new(0, 0.3, 0) * VERT, Color = trim, Material = trimMat })
-	P(base, { Name = "AltarPillar", Shape = CYL, Size = Vector3.new(3, 2, 2), CFrame = altarCf * CFrame.new(0, 3.1, 0) * VERT, Color = Color3.fromRGB(235, 225, 205), Material = M.Marble })
+	P(base, { Name = "AltarPillar", Shape = CYL, Size = Vector3.new(3, 2, 2), CFrame = altarCf * CFrame.new(0, 3.1, 0) * VERT, Color = Color3.fromRGB(255, 255, 255), Material = M.SmoothPlastic })
 	local orb = P(base, { Name = "AltarOrb", Shape = BALL, Size = Vector3.new(2.6, 2.6, 2.6), CFrame = altarCf * CFrame.new(0, 6, 0), Color = Color3.fromRGB(255, 220, 90), Material = M.Neon, CanCollide = false })
 	local orbLight = Instance.new("PointLight")
 	orbLight.Color = Color3.fromRGB(255, 220, 120)
@@ -373,8 +390,8 @@ function BaseBuilder.Build(parent: Instance, info: BuildInfo): Model
 		local mid = (a + b) / 2
 		local len = (b - a).Magnitude + 2
 		local cf = CFrame.lookAt(mid, b)
-		P(pb, { Name = "Frame", Size = Vector3.new(4, 1.2, len), CFrame = cf - Vector3.new(0, 0.8, 0), Color = Color3.fromRGB(70, 74, 86), Material = M.Metal })
-		P(pb, { Name = "Surface", Size = Vector3.new(3.4, 0.2, len), CFrame = cf - Vector3.new(0, 0.1, 0), Color = Color3.fromRGB(45, 45, 52), Material = M.Rubber })
+		P(pb, { Name = "Frame", Size = Vector3.new(4, 1.2, len), CFrame = cf - Vector3.new(0, 0.8, 0), Color = Color3.fromRGB(62, 62, 84), Material = M.SmoothPlastic })
+		P(pb, { Name = "Surface", Size = Vector3.new(3.4, 0.2, len), CFrame = cf - Vector3.new(0, 0.1, 0), Color = Color3.fromRGB(226, 40, 52), Material = M.SmoothPlastic })
 		P(pb, { Name = "Spawner", Size = Vector3.new(4.4, 5, 4.4), CFrame = CFrame.new(a + (a - b).Unit * 2.5 + Vector3.new(0, 1, 0)), Color = theme.accent, Material = M.SmoothPlastic })
 		P(pb, { Name = "SpawnerTop", Shape = CYL, Size = Vector3.new(0.4, 3.6, 3.6), CFrame = CFrame.new(a + (a - b).Unit * 2.5 + Vector3.new(0, 3.7, 0)) * VERT, Color = Color3.fromRGB(255, 255, 255), Material = M.Neon })
 	end

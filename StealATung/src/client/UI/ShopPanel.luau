@@ -64,7 +64,7 @@ local function card(parent: Instance, spec: CardSpec)
 end
 
 function ShopPanel.Build(): any
-	local win = Lib.window("Shop", Vector2.new(980, 640), Color3.fromRGB(190, 255, 170), "🛒")
+	local win = Lib.window("Shop", Vector2.new(980, 640), Lib.Colors.Green, "🛒")
 	local body = win.body
 	local tabHolder = Lib.new("Frame", { Size = UDim2.new(1, 0, 0, 52), BackgroundTransparency = 1, Parent = body })
 	local content = Lib.new("ScrollingFrame", {

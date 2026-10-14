@@ -15,7 +15,7 @@ local C = Lib.Colors
 local RebirthPanel = {}
 
 function RebirthPanel.Build(): any
-	local win = Lib.window("Rebirth", Vector2.new(860, 600), Color3.fromRGB(255, 220, 120), "♻️")
+	local win = Lib.window("Rebirth", Vector2.new(860, 600), Lib.Colors.Gold, "♻️")
 	local body = win.body
 
 	local function column(x: number, title: string, c1: Color3, c2: Color3): Frame

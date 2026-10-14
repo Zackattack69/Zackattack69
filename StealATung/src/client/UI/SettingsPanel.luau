@@ -9,7 +9,7 @@ local C = Lib.Colors
 local SettingsPanel = {}
 
 function SettingsPanel.Build(): any
-	local win = Lib.window("Settings", Vector2.new(640, 470), Color3.fromRGB(255, 240, 210), "⚙️")
+	local win = Lib.window("Settings", Vector2.new(640, 470), Lib.Colors.Purple, "⚙️")
 	local body = win.body
 	Lib.list(body, 14, false, Enum.HorizontalAlignment.Center).VerticalAlignment = Enum.VerticalAlignment.Top
 

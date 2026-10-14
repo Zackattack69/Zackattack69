@@ -63,8 +63,8 @@ local function label(parent: Instance, props: { [string]: any }): TextLabel
 		(l :: any)[k] = v
 	end
 	local s = Instance.new("UIStroke")
-	s.Thickness = 3
-	s.Color = Color3.fromRGB(50, 30, 15)
+	s.Thickness = 3.5
+	s.Color = Color3.fromRGB(20, 16, 34)
 	s.Parent = l
 	l.Parent = parent
 	return l
@@ -77,7 +77,11 @@ local function column(gui: SurfaceGui, x: number, width: number, title: string, 
 		local bg = Instance.new("Frame")
 		bg.Size = UDim2.fromOffset(width, 62)
 		bg.Position = UDim2.fromOffset(x, 170 + (r - 1) * 68)
-		bg.BackgroundColor3 = if r % 2 == 0 then Color3.fromRGB(120, 80, 46) else Color3.fromRGB(140, 96, 56)
+		bg.BackgroundColor3 = if r == 1 then Color3.fromRGB(255, 196, 40) elseif r == 2 then Color3.fromRGB(190, 200, 225) elseif r == 3 then Color3.fromRGB(230, 140, 70) elseif r % 2 == 0 then Color3.fromRGB(110, 70, 220) else Color3.fromRGB(130, 90, 240)
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = 3
+		stroke.Color = Color3.fromRGB(20, 16, 34)
+		stroke.Parent = bg
 		bg.BorderSizePixel = 0
 		local c = Instance.new("UICorner")
 		c.CornerRadius = UDim.new(0, 12)

@@ -16,7 +16,7 @@ local C = Lib.Colors
 local SellPanel = {}
 
 function SellPanel.Build(): any
-	local win = Lib.window("Sell Tungs", Vector2.new(900, 620), Color3.fromRGB(255, 190, 170), "💰")
+	local win = Lib.window("Sell Tungs", Vector2.new(900, 620), Lib.Colors.Money, "💰")
 	local body = win.body
 	Lib.label({ Text = "Sell for 50% of the buy price. Bound Tungs (VIP / Group) can't be sold.", Size = UDim2.new(1, 0, 0, 28), Dark = true, TextColor3 = C.SubText, Parent = body })
 	local grid = Lib.new("ScrollingFrame", { Size = UDim2.new(1, 0, 1, -40), Position = UDim2.fromOffset(0, 40), BackgroundTransparency = 1, ScrollBarThickness = 8, ScrollBarImageColor3 = C.Wood2, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(), Parent = body })
@@ -53,8 +53,9 @@ function SellPanel.Build(): any
 			local f = Lib.card(grid, { Size = UDim2.fromOffset(196, 252), LayoutOrder = e.slot })
 			Lib.tungViewport(f, t.id, e.s.m, UDim2.new(1, -12, 0, 110), UDim2.fromOffset(6, 6), false)
 			Lib.label({ Text = Mutations.Prefix(e.s.m) .. t.name, Size = UDim2.new(1, -12, 0, 24), Position = UDim2.fromOffset(6, 118), Dark = true, Parent = f })
-			local r = Lib.label({ Text = Tungs.RarityLabel(t), Size = UDim2.new(1, -12, 0, 18), Position = UDim2.fromOffset(6, 142), TextColor3 = if t.rarity == "Secret" then Color3.new(1, 1, 1) else color, Parent = f })
-			Lib.rainbowIfSecret(r, t)
+			local r = Lib.label({ Text = Tungs.RarityLabel(t), Font = Lib.FontTitle, Size = UDim2.new(1, -12, 0, 18), Position = UDim2.fromOffset(6, 142), Parent = f })
+			Lib.rarityText(r, t)
+			local _ = color
 			local price = Economy.SellPrice(t.id, e.s.m) + math.floor(e.s.s or 0)
 			local confirming = confirmSlot == e.slot and os.clock() < confirmUntil
 			Lib.button({

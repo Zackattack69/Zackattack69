@@ -16,6 +16,7 @@ local Rarities = require(script.Parent.Config.Rarities)
 local Tungs = require(script.Parent.Config.Tungs)
 local Mutations = require(script.Parent.Config.Mutations)
 local Format = require(script.Parent.Util.Format)
+local Style = require(script.Parent.Style)
 
 local TungModel = {}
 
@@ -26,9 +27,10 @@ local BLOCK = Enum.PartType.Block
 local VERT = CFrame.Angles(0, 0, math.rad(90)) -- cylinder axis X -> Y
 local ALONG_Z = CFrame.Angles(0, math.rad(90), 0) -- cylinder axis X -> Z
 
-local WOOD = Color3.fromRGB(176, 122, 74)
-local WOOD_DARK = Color3.fromRGB(120, 80, 48)
-local WOOD_LIGHT = Color3.fromRGB(226, 186, 128)
+-- bright cartoon "toy wood" colours
+local WOOD = Color3.fromRGB(226, 160, 98)
+local WOOD_DARK = Color3.fromRGB(165, 104, 60)
+local WOOD_LIGHT = Color3.fromRGB(255, 218, 152)
 local BLACK = Color3.fromRGB(20, 20, 24)
 local WHITE = Color3.fromRGB(250, 250, 250)
 
@@ -48,7 +50,7 @@ local function part(parent: Instance, name: string, shape: Enum.PartType, size: 
 	p.Size = size
 	p.CFrame = cf
 	p.Color = color
-	p.Material = material or M.SmoothPlastic
+	Style.Apply(p, material)
 	p.Anchored = true
 	p.CanCollide = false
 	p.CanTouch = false
@@ -408,7 +410,7 @@ function TungModel.Build(id: string, mut: string?, opts: BuildOpts?): Model
 	model.PrimaryPart = root
 
 	local skinColor = look.body or WOOD
-	local skinMat = look.material or M.Wood
+	local skinMat = look.material or M.SmoothPlastic
 	local skin: { BasePart } = {}
 	local eyes: { BasePart } = {}
 	local function sk(p: BasePart): BasePart
@@ -434,16 +436,19 @@ function TungModel.Build(id: string, mut: string?, opts: BuildOpts?): Model
 		if glow then
 			table.insert(eyes, part(model, "Eye", BALL, Vector3.new(0.7, 0.7, 0.7), CFrame.new(sx * 0.5, 5.0, -1.12), look.eyeColor or WHITE, M.Neon))
 		else
-			part(model, "EyeWhite", BALL, Vector3.new(0.82, 0.82, 0.82), CFrame.new(sx * 0.5, 5.0, -1.08), WHITE)
-			table.insert(eyes, part(model, "Pupil", BALL, Vector3.new(0.38, 0.38, 0.38), CFrame.new(sx * 0.48, 4.98, -1.47), BLACK))
+			part(model, "EyeWhite", BALL, Vector3.new(0.98, 0.98, 0.98), CFrame.new(sx * 0.5, 5.0, -1.02), WHITE)
+			table.insert(eyes, part(model, "Pupil", BALL, Vector3.new(0.5, 0.5, 0.5), CFrame.new(sx * 0.46, 4.96, -1.47), BLACK))
+			part(model, "Shine", BALL, Vector3.new(0.17, 0.17, 0.17), CFrame.new(sx * 0.46 - 0.12, 5.08, -1.69), WHITE, M.Neon)
 		end
 		if look.eyes == "Sleepy" then
 			part(model, "Eyelid", BLOCK, Vector3.new(0.9, 0.45, 0.4), CFrame.new(sx * 0.5, 5.2, -1.3), skinColor, skinMat)
 		end
-		part(model, "Brow", BLOCK, Vector3.new(0.78, 0.17, 0.17), CFrame.new(sx * 0.5, 5.62, -1.27) * CFrame.Angles(0, 0, sx * -0.22), BLACK)
+		part(model, "Brow", BLOCK, Vector3.new(0.82, 0.24, 0.2), CFrame.new(sx * 0.5, 5.7, -1.25) * CFrame.Angles(0, 0, sx * -0.25), BLACK)
 	end
 	part(model, "Nose", BALL, Vector3.new(0.42, 0.42, 0.42), CFrame.new(0, 4.55, -1.35), skinColor:Lerp(WOOD_DARK, 0.35), skinMat)
-	part(model, "Mouth", BLOCK, Vector3.new(1.05, 0.24, 0.2), CFrame.new(0, 3.95, -1.24), Color3.fromRGB(70, 25, 25))
+	part(model, "Mouth", BLOCK, Vector3.new(1.2, 0.42, 0.2), CFrame.new(0, 3.92, -1.24), Color3.fromRGB(110, 20, 40))
+	part(model, "Teeth", BLOCK, Vector3.new(0.95, 0.12, 0.1), CFrame.new(0, 4.07, -1.33), WHITE)
+	part(model, "Tongue", BLOCK, Vector3.new(0.5, 0.14, 0.1), CFrame.new(0, 3.77, -1.33), Color3.fromRGB(255, 110, 140))
 
 	-- arms: left hangs, right holds the bat
 	local lShoulder, lHand = Vector3.new(-1.32, 5.0, 0), Vector3.new(-1.8, 3.35, -0.25)
@@ -456,7 +461,7 @@ function TungModel.Build(id: string, mut: string?, opts: BuildOpts?): Model
 	-- the bat (pivot = grip, bat axis = -Z of the pivot)
 	local bat = subModel(model, "Bat")
 	local batColor = look.bat or WOOD_LIGHT
-	local batMat = look.batMaterial or M.Wood
+	local batMat = look.batMaterial or M.SmoothPlastic
 	local grip = CFrame.lookAt(rHand, rHand + Vector3.new(0.2, 1, 0.45))
 	part(bat, "Handle", CYL, Vector3.new(1.5, 0.3, 0.3), grip * CFrame.new(0, 0, -0.45) * ALONG_Z, batColor:Lerp(WOOD_DARK, 0.25), batMat)
 	part(bat, "Barrel", CYL, Vector3.new(2.6, 0.62, 0.62), grip * CFrame.new(0, 0, -2.3) * ALONG_Z, batColor, batMat)
@@ -498,6 +503,61 @@ function TungModel.Build(id: string, mut: string?, opts: BuildOpts?): Model
 end
 
 -- Floating nameplate. "belt": name, rarity, price, $/s. "pad": name + $/s.
+-- Gradient presets; "Anim" gradients are animated by the client (Shine sweeps,
+-- Rainbow spins, Fire flickers). Tagged "AnimGradient".
+local function cs(...: Color3): ColorSequence
+	local colors = { ... }
+	local kps = {}
+	for i, c in colors do
+		table.insert(kps, ColorSequenceKeypoint.new((i - 1) / math.max(1, #colors - 1), c))
+	end
+	return ColorSequence.new(kps)
+end
+
+local function gradient(parent: Instance, seq: ColorSequence, anim: string?, rotation: number?): UIGradient
+	local g = Instance.new("UIGradient")
+	g.Color = seq
+	g.Rotation = rotation or 90
+	if anim then
+		g:SetAttribute("Anim", anim)
+		CollectionService:AddTag(g, "AnimGradient")
+	end
+	g.Parent = parent
+	return g
+end
+TungModel.Gradient = gradient
+TungModel.Seq = cs
+
+-- Colour style for a rarity label: (gradient, animation)
+function TungModel.RarityStyle(t: Tungs.Tung): (ColorSequence, string?)
+	local c = Tungs.Color(t)
+	local white = Color3.new(1, 1, 1)
+	if t.rarity == "Secret" then
+		return Rarities.RAINBOW, "Rainbow"
+	elseif t.rarity == "Mythic" then
+		return cs(c:Lerp(white, 0.75), c:Lerp(white, 0.2), c, c:Lerp(Color3.new(0, 0, 0), 0.25)), "Fire"
+	elseif t.rarity == "Legendary" then
+		return cs(Color3.fromRGB(255, 250, 190), Color3.fromRGB(255, 210, 40), Color3.fromRGB(255, 150, 20)), "Shine"
+	elseif t.rarity == "Epic" then
+		return cs(Color3.fromRGB(240, 170, 255), c, Color3.fromRGB(150, 60, 255)), "Shine"
+	end
+	return cs(c:Lerp(white, 0.45), c), nil
+end
+
+function TungModel.MutationStyle(key: string): (ColorSequence, string?)
+	if key == "Rainbow" then
+		return Rarities.RAINBOW, "Rainbow"
+	elseif key == "Gold" then
+		return cs(Color3.fromRGB(255, 250, 190), Color3.fromRGB(255, 205, 40), Color3.fromRGB(240, 140, 20)), "Shine"
+	elseif key == "Diamond" then
+		return cs(Color3.fromRGB(240, 255, 255), Color3.fromRGB(120, 230, 255), Color3.fromRGB(70, 160, 255)), "Shine"
+	elseif key == "Cursed" then
+		return cs(Color3.fromRGB(255, 120, 120), Color3.fromRGB(220, 20, 40), Color3.fromRGB(60, 0, 20)), "Fire"
+	end
+	return cs(Color3.new(1, 1, 1), Color3.new(1, 1, 1)), nil
+end
+
+-- Floating nameplate. "belt": name, rarity, price, $/s. "pad": name + rarity + $/s.
 function TungModel.Nameplate(model: Model, id: string, mut: string?, mode: string): BillboardGui?
 	local t = Tungs.Get(id)
 	local root = model.PrimaryPart
@@ -505,56 +565,54 @@ function TungModel.Nameplate(model: Model, id: string, mut: string?, mode: strin
 		return nil
 	end
 	local h = (model:GetAttribute("Height") :: number?) or TungModel.HEIGHT
-	local color = Tungs.Color(t)
 	local mutation = Mutations.Get(mut)
 	local belt = mode == "belt"
 
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "Nameplate"
-	bb.Size = if belt then UDim2.fromOffset(230, 104) else UDim2.fromOffset(200, 54)
-	bb.StudsOffset = Vector3.new(0, h + (if belt then 2.6 else 1.6), 0)
+	bb.Size = if belt then UDim2.fromOffset(250, 118) else UDim2.fromOffset(210, 66)
+	bb.StudsOffset = Vector3.new(0, h + (if belt then 2.8 else 1.8), 0)
 	bb.LightInfluence = 0
-	bb.MaxDistance = if belt then 140 else 70
+	bb.MaxDistance = if belt then 150 else 75
 	bb.ResetOnSpawn = false
 
 	local list = Instance.new("UIListLayout")
 	list.SortOrder = Enum.SortOrder.LayoutOrder
 	list.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	list.VerticalAlignment = Enum.VerticalAlignment.Bottom
+	list.Padding = UDim.new(0, -2)
 	list.Parent = bb
 
-	local function line(order: number, text: string, textColor: Color3, height: number, strokeColor: Color3?): TextLabel
+	local function line(order: number, text: string, height: number, seq: ColorSequence, anim: string?, font: Enum.Font?): TextLabel
 		local l = Instance.new("TextLabel")
 		l.Size = UDim2.new(1, 0, 0, height)
 		l.BackgroundTransparency = 1
 		l.Text = text
 		l.TextScaled = true
-		l.Font = Enum.Font.FredokaOne
-		l.TextColor3 = textColor
+		l.Font = font or Enum.Font.FredokaOne
+		l.TextColor3 = Color3.new(1, 1, 1)
 		l.LayoutOrder = order
 		local s = Instance.new("UIStroke")
-		s.Thickness = 2.5
-		s.Color = strokeColor or Color3.fromRGB(25, 20, 15)
+		s.Thickness = 3
+		s.Color = Color3.fromRGB(20, 16, 34)
 		s.Parent = l
+		gradient(l, seq, anim)
 		l.Parent = bb
 		return l
 	end
 
 	if mutation then
-		line(1, mutation.icon .. " " .. string.upper(mutation.name), mutation.color, 18)
+		local seq, anim = TungModel.MutationStyle(mutation.key)
+		line(1, mutation.icon .. " " .. string.upper(mutation.name), 20, seq, anim)
 	end
-	line(2, t.name, Color3.new(1, 1, 1), 24)
-	local rarityLabel = line(3, Tungs.RarityLabel(t), if t.rarity == "Secret" then Color3.new(1, 1, 1) else color, 20)
-	if t.rarity == "Secret" then
-		local g = Instance.new("UIGradient")
-		g.Color = Rarities.RAINBOW
-		g.Parent = rarityLabel
-	end
+	line(2, t.name, if belt then 26 else 22, cs(Color3.new(1, 1, 1), Color3.fromRGB(225, 230, 255)), nil, Enum.Font.FredokaOne)
+	local rseq, ranim = TungModel.RarityStyle(t)
+	line(3, Tungs.RarityLabel(t), if belt then 24 else 18, rseq, ranim, Enum.Font.LuckiestGuy)
 	if belt then
 		local price = t.price * Mutations.Mult(mut)
-		line(4, Format.Money(price), Color3.fromRGB(120, 255, 120), 22)
+		line(4, Format.Money(price), 26, cs(Color3.fromRGB(190, 255, 140), Color3.fromRGB(60, 220, 70)), nil, Enum.Font.LuckiestGuy)
 	end
-	line(5, Format.Money(t.income * Mutations.Mult(mut)) .. "/s", Color3.fromRGB(255, 225, 90), if belt then 18 else 16)
+	line(5, Format.Money(t.income * Mutations.Mult(mut)) .. "/s", if belt then 20 else 17, cs(Color3.fromRGB(255, 250, 170), Color3.fromRGB(255, 200, 40)))
 
 	bb.Parent = root
 	return bb

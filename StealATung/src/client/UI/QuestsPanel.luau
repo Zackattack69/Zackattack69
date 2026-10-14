@@ -23,7 +23,7 @@ local function longTime(seconds: number): string
 end
 
 function QuestsPanel.Build(): any
-	local win = Lib.window("Quests", Vector2.new(900, 640), Color3.fromRGB(190, 225, 255), "📜")
+	local win = Lib.window("Quests", Vector2.new(900, 640), Lib.Colors.Blue, "📜")
 	local body = win.body
 
 	-- Login calendar ------------------------------------------------------------------------------------

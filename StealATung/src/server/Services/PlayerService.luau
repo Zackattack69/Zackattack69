@@ -12,6 +12,7 @@ local Items = require(Shared.Config.Items)
 local Layout = require(Shared.Config.Layout)
 local Mutations = require(Shared.Config.Mutations)
 local Format = require(Shared.Util.Format)
+local Style = require(Shared.Style)
 
 local Bus = require(script.Parent.Parent.Bus)
 local DataService = require(script.Parent.DataService)
@@ -75,7 +76,7 @@ local function makeBat(tier: number): Tool
 	handle.Name = "Handle"
 	handle.Size = Vector3.new(0.45, 0.45, 2)
 	handle.Color = bat.color:Lerp(Color3.new(0, 0, 0), 0.25)
-	handle.Material = bat.material
+	Style.Apply(handle, bat.material)
 	handle.CanCollide = false
 	handle.Massless = true
 	handle.Parent = tool
@@ -86,7 +87,7 @@ local function makeBat(tier: number): Tool
 	barrel.Size = Vector3.new(2.6, 0.85, 0.85)
 	barrel.CFrame = handle.CFrame * CFrame.new(0, 0, 2.1) * CFrame.Angles(0, math.rad(90), 0)
 	barrel.Color = bat.color
-	barrel.Material = bat.material
+	Style.Apply(barrel, bat.material)
 	barrel.CanCollide = false
 	barrel.Massless = true
 	barrel.Parent = tool
@@ -101,7 +102,7 @@ local function makeBat(tier: number): Tool
 	knob.Size = Vector3.new(0.6, 0.6, 0.6)
 	knob.CFrame = handle.CFrame * CFrame.new(0, 0, -1)
 	knob.Color = handle.Color
-	knob.Material = bat.material
+	Style.Apply(knob, bat.material)
 	knob.CanCollide = false
 	knob.Massless = true
 	knob.Parent = tool

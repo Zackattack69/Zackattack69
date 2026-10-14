@@ -140,6 +140,7 @@ local function succeed(carry: Carry)
 	local color = if t then Tungs.Color(t) else RED
 	EconomyService.Alert(nil, "🦹 " .. thief.DisplayName .. " stole " .. victim.DisplayName .. "'s " .. name .. "!", color, "Steal", "steal")
 	EconomyService.Notify(victim, "😭 " .. thief.DisplayName .. " stole your " .. name .. "!", "error")
+	EconomyService.Notify(thief, "🦹 You stole " .. name .. "! It's yours now.", "stealwin")
 end
 
 -- Steal prompt ---------------------------------------------------------------------------------------

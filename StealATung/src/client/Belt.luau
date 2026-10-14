@@ -119,6 +119,7 @@ local function add(e: any)
 			local ok = State.Request("Buy", e.id)
 			if ok then
 				Lib.sound("Purchase")
+				State.Fire("Purchased", t.name)
 				State.Fire("Toast", "🛒 Bought " .. Mutations.Prefix(e.mut) .. t.name .. "! Walk it back to your base.", "money")
 			end
 		end)
@@ -142,6 +143,9 @@ local function remove(id: number, buyer: number?)
 	if buyer then
 		local pos = it.model:GetPivot().Position
 		Lib.sound3D("Puff", pos)
+		if buyer == player.UserId then
+			State.Fire("Confetti", pos + Vector3.new(0, 3, 0))
+		end
 	end
 	it.model:Destroy()
 end
@@ -163,7 +167,7 @@ local function slats()
 		p.CanTouch = false
 		p.CastShadow = false
 		p.Size = Vector3.new(Layout.BELT_WIDTH - 0.4, 0.06, 1.4)
-		p.Color = Color3.fromRGB(78, 78, 90)
+		p.Color = if k % 2 == 0 then Color3.fromRGB(176, 22, 36) else Color3.fromRGB(255, 120, 120)
 		p.Material = Enum.Material.SmoothPlastic
 		p.Parent = folder
 		parts[k] = p

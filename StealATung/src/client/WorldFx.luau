@@ -23,6 +23,7 @@ local Mutations = require(Shared.Config.Mutations)
 local Rarities = require(Shared.Config.Rarities)
 local Tungs = require(Shared.Config.Tungs)
 local Remotes = require(Shared.Remotes)
+local Format = require(Shared.Util.Format)
 local TungModel = require(Shared.TungModel)
 
 local State = require(script.Parent.State)
@@ -900,6 +901,207 @@ local function hookOwnLasers(base: Instance)
 	base:GetAttributeChangedSignal("OwnerId"):Connect(check)
 end
 
+-- Cartoon world life: puffy clouds, blinking bulbs, spinning / bobbing props ----------------------
+type Cloud = { parts: { BasePart }, offsets: { Vector3 }, pos: Vector3, speed: number }
+local clouds: { Cloud } = {}
+
+local function makeClouds()
+	local rng = Random.new(5)
+	for _ = 1, 16 do
+		local parts: { BasePart } = {}
+		local offsets: { Vector3 } = {}
+		local n = rng:NextInteger(4, 6)
+		for k = 1, n do
+			local p = Instance.new("Part")
+			p.Shape = Enum.PartType.Ball
+			p.Anchored = true
+			p.CanCollide = false
+			p.CanQuery = false
+			p.CanTouch = false
+			p.CastShadow = false
+			p.Material = Enum.Material.SmoothPlastic
+			p.Color = Color3.fromRGB(255, 255, 255)
+			local size = rng:NextNumber(14, 26) * (if k == 1 then 1.3 else 1)
+			p.Size = Vector3.new(size, size * 0.8, size)
+			p.Parent = fxFolder
+			table.insert(parts, p :: BasePart)
+			table.insert(offsets, Vector3.new(rng:NextNumber(-18, 18), rng:NextNumber(-3, 5), rng:NextNumber(-10, 10)))
+		end
+		table.insert(clouds, {
+			parts = parts,
+			offsets = offsets,
+			pos = Vector3.new(rng:NextNumber(-450, 450), rng:NextNumber(110, 170), rng:NextNumber(-450, 450)),
+			speed = rng:NextNumber(3, 7),
+		})
+	end
+end
+
+local function updateClouds(dt: number)
+	local hidden = State.settings.low
+	local night = Workspace:GetAttribute("Night") == true
+	for _, c in clouds do
+		c.pos += Vector3.new(c.speed * dt, 0, c.speed * 0.3 * dt)
+		if c.pos.X > 480 then
+			c.pos = Vector3.new(-480, c.pos.Y, c.pos.Z)
+		end
+		if c.pos.Z > 480 then
+			c.pos = Vector3.new(c.pos.X, c.pos.Y, -480)
+		end
+		for k, p in c.parts do
+			p.Transparency = if hidden then 1 elseif night then 0.55 else 0
+			p.CFrame = CFrame.new(c.pos + c.offsets[k])
+		end
+	end
+end
+
+local function updateProps(t: number)
+	for _, b in CollectionService:GetTagged("Bulb") do
+		if b:IsA("BasePart") then
+			local i = (b:GetAttribute("Index") :: number?) or 0
+			local on = (math.floor(t * 8) + i) % 3 == 0
+			b.Color = if on then Color3.fromRGB(255, 255, 255) else Color3.fromHSV(((i / 16) + t * 0.2) % 1, 0.7, 1)
+		end
+	end
+	for _, p in CollectionService:GetTagged("Spin") do
+		if p:IsA("BasePart") then
+			local base = p:GetAttribute("BaseCF") :: CFrame?
+			if not base then
+				base = p.CFrame
+				p:SetAttribute("BaseCF", base)
+			end
+			p.CFrame = CFrame.new((base :: CFrame).Position) * CFrame.Angles(0, t * 1.5, 0) * (base :: CFrame).Rotation
+		end
+	end
+	for _, p in CollectionService:GetTagged("Bob") do
+		if p:IsA("BasePart") then
+			local base = p:GetAttribute("BasePos") :: Vector3?
+			if not base then
+				base = p.Position
+				p:SetAttribute("BasePos", base)
+			end
+			p.CFrame = CFrame.new((base :: Vector3) + Vector3.new(0, math.sin(t * 2.5) * 1.2, 0))
+		end
+	end
+end
+
+-- "+$X" pops floating off your own Tungs, and pulsing collect buttons -------------------------------------
+local lastPop = 0
+local function incomePops(t: number)
+	if t - lastPop < 2.5 or State.settings.low then
+		return
+	end
+	lastPop = t
+	local d = State.data
+	local i = player:GetAttribute("Base") :: number?
+	if not d or not i then
+		return
+	end
+	local arena = Workspace:FindFirstChild("Arena")
+	local bases = arena and arena:FindFirstChild("Bases")
+	local base = bases and bases:FindFirstChild("Base" .. i)
+	if not base then
+		return
+	end
+	local mult = d.mult or 1
+	for _, m in base:GetChildren() do
+		if m:IsA("Model") and m:GetAttribute("TungId") and (m:GetPivot().Position - camPos()).Magnitude < 90 then
+			local id = m:GetAttribute("TungId") :: string
+			local mut = m:GetAttribute("Mutation") :: string?
+			local tung = Tungs.Get(id)
+			if tung then
+				local amount = tung.income * Mutations.Mult(mut) * mult * 2.5
+				local anchor = Instance.new("Part")
+				anchor.Anchored = true
+				anchor.CanCollide = false
+				anchor.CanQuery = false
+				anchor.CanTouch = false
+				anchor.Transparency = 1
+				anchor.Size = Vector3.new(0.2, 0.2, 0.2)
+				local h = (m:GetAttribute("Height") :: number?) or 6.4
+				local start = m:GetPivot().Position + Vector3.new(math.random(-10, 10) / 10, h * 0.7, math.random(-10, 10) / 10)
+				anchor.CFrame = CFrame.new(start)
+				anchor.Parent = fxFolder
+				local bb = Instance.new("BillboardGui")
+				bb.Size = UDim2.fromOffset(120, 34)
+				bb.AlwaysOnTop = false
+				bb.LightInfluence = 0
+				bb.MaxDistance = 90
+				local l = Instance.new("TextLabel")
+				l.Size = UDim2.fromScale(1, 1)
+				l.BackgroundTransparency = 1
+				l.Font = Enum.Font.LuckiestGuy
+				l.TextScaled = true
+				l.Text = "+" .. Format.Money(amount)
+				l.TextColor3 = Color3.fromRGB(140, 255, 110)
+				local st = Instance.new("UIStroke")
+				st.Thickness = 3
+				st.Color = Color3.fromRGB(20, 16, 34)
+				st.Parent = l
+				l.Parent = bb
+				bb.Parent = anchor
+				TweenService:Create(anchor, TweenInfo.new(1.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { CFrame = CFrame.new(start + Vector3.new(0, 4, 0)) }):Play()
+				TweenService:Create(l, TweenInfo.new(1.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { TextTransparency = 1 }):Play()
+				TweenService:Create(st, TweenInfo.new(1.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Transparency = 1 }):Play()
+				task.delay(1.35, function()
+					anchor:Destroy()
+				end)
+			end
+		end
+	end
+end
+
+local function pulseButtons(t: number)
+	local i = player:GetAttribute("Base") :: number?
+	local arena = Workspace:FindFirstChild("Arena")
+	local bases = arena and arena:FindFirstChild("Bases")
+	local base = i and bases and bases:FindFirstChild("Base" .. i)
+	local buttons = base and base:FindFirstChild("Buttons")
+	if not buttons then
+		return
+	end
+	local a = (math.sin(t * 4) + 1) / 2
+	for _, b in buttons:GetChildren() do
+		local rim = b:FindFirstChild("Rim") :: BasePart?
+		local counter = b:FindFirstChild("Counter") :: BillboardGui?
+		if rim and counter then
+			rim.Transparency = if counter.Enabled then a * 0.6 else 0.5
+		end
+	end
+end
+
+local function confetti(pos: Vector3)
+	if State.settings.low then
+		return
+	end
+	local p = Instance.new("Part")
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.Transparency = 1
+	p.Size = Vector3.new(1, 1, 1)
+	p.CFrame = CFrame.new(pos)
+	p.Parent = fxFolder
+	for _, color in { Color3.fromRGB(255, 80, 120), Color3.fromRGB(255, 220, 60), Color3.fromRGB(90, 220, 255), Color3.fromRGB(140, 255, 90) } do
+		local e = Instance.new("ParticleEmitter")
+		e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		e.Rate = 0
+		e.Lifetime = NumberRange.new(0.8, 1.3)
+		e.Speed = NumberRange.new(14, 22)
+		e.Acceleration = Vector3.new(0, -30, 0)
+		e.SpreadAngle = Vector2.new(60, 60)
+		e.EmissionDirection = Enum.NormalId.Top
+		e.Size = NumberSequence.new(0.9, 0.2)
+		e.RotSpeed = NumberRange.new(-300, 300)
+		e.LightEmission = 0.6
+		e.Color = ColorSequence.new(color)
+		e.Parent = p
+		e:Emit(14)
+	end
+	task.delay(2, function()
+		p:Destroy()
+	end)
+end
+
 -- Tapping a Tung: a hollow wooden "TUNG" (higher for small Tungs, deeper for big ones)
 local function tapTung(screenPos: Vector2)
 	local cam = Workspace.CurrentCamera
@@ -1116,12 +1318,15 @@ function WorldFx.Init()
 	rainEmitter = rain
 	eventVisuals()
 	makeCritters()
+	makeClouds()
+	State.On("Confetti", confetti)
 
 	-- Per-frame update
 	local accum = 0
 	RunService.RenderStepped:Connect(function(dt)
 		local t = os.clock()
 		updateCarriers(t)
+		updateClouds(dt)
 		rainPart.CFrame = CFrame.new(camPos() + Vector3.new(0, 40, 0))
 		accum += dt
 		if accum >= 1 / 30 then
@@ -1136,6 +1341,9 @@ function WorldFx.Init()
 				end
 			end
 			updateCritters(t)
+			updateProps(t)
+			pulseButtons(t)
+			incomePops(t)
 		end
 	end)
 

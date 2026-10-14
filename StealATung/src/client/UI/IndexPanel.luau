@@ -22,12 +22,17 @@ local TABS = { "All", "Common", "Uncommon", "Rare", "Epic", "Legendary", "Secret
 local function card(parent: Instance, t: Tungs.Tung, entry: any?, order: number)
 	local color = Tungs.Color(t)
 	local found = entry ~= nil
-	local f = Lib.new("Frame", { Size = UDim2.fromOffset(150, 206), BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = order, Parent = parent })
+	local f = Lib.new("Frame", { Size = UDim2.fromOffset(150, 206), BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = order, ClipsDescendants = true, Parent = parent })
 	Lib.corner(f, 18)
-	Lib.gradient(f, if found then color:Lerp(Color3.new(1, 1, 1), 0.55) else Color3.fromRGB(200, 186, 166), if found then color:Lerp(Color3.new(1, 1, 1), 0.2) else Color3.fromRGB(150, 132, 110), 90)
+	Lib.gradient(f, if found then color:Lerp(Color3.new(1, 1, 1), 0.5) else Color3.fromRGB(78, 72, 128), if found then color:Lerp(Color3.new(0, 0, 0), 0.1) else Color3.fromRGB(36, 32, 70), 90)
 	local stroke = Lib.stroke(f, if t.rarity == "Secret" then Color3.new(1, 1, 1) else color, 4)
 	if t.rarity == "Secret" then
 		Lib.new("UIGradient", { Color = Rarities.RAINBOW, Parent = stroke })
+	end
+	if found and Rarities.Order(t.rarity) >= Rarities.Order("Epic") then
+		local rays = Lib.rays(f, Color3.new(1, 1, 1), 190, 8)
+		rays.Position = UDim2.new(0.5, 0, 0, 62)
+		Lib.sparkles(f, 3)
 	end
 	local vf = Lib.tungViewport(f, t.id, Mutations.NONE, UDim2.new(1, -10, 0, 118), UDim2.fromOffset(5, 4), found)
 	if not found then
@@ -44,8 +49,8 @@ local function card(parent: Instance, t: Tungs.Tung, entry: any?, order: number)
 		end
 	end
 	Lib.label({ Text = if found then t.name else "???", Size = UDim2.new(1, -10, 0, 24), Position = UDim2.fromOffset(5, 122), Parent = f })
-	local r = Lib.label({ Text = Tungs.RarityLabel(t), Size = UDim2.new(1, -10, 0, 18), Position = UDim2.fromOffset(5, 146), TextColor3 = if t.rarity == "Secret" then Color3.new(1, 1, 1) else color, Parent = f })
-	Lib.rainbowIfSecret(r, t)
+	local r = Lib.label({ Text = Tungs.RarityLabel(t), Font = Lib.FontTitle, Size = UDim2.new(1, -10, 0, 18), Position = UDim2.fromOffset(5, 146), Parent = f })
+	Lib.rarityText(r, t)
 	if found then
 		Lib.label({ Text = Format.Money(t.income) .. "/s", Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 165), TextColor3 = Color3.fromRGB(255, 230, 110), Parent = f })
 		local icons = {}
@@ -54,12 +59,12 @@ local function card(parent: Instance, t: Tungs.Tung, entry: any?, order: number)
 				table.insert(icons, m.icon)
 			end
 		end
-		Lib.label({ Text = "Found " .. os.date("%d %b %Y", entry.t) .. (if #icons > 0 then "  " .. table.concat(icons) else ""), Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 184), Dark = true, TextColor3 = C.TextDark, Parent = f })
+		Lib.label({ Text = "Found " .. os.date("%d %b %Y", entry.t) .. (if #icons > 0 then "  " .. table.concat(icons) else ""), Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 184), Parent = f })
 	end
 end
 
 function IndexPanel.Build(): any
-	local win = Lib.window("Index", Vector2.new(1000, 660), Color3.fromRGB(255, 236, 190), "📖")
+	local win = Lib.window("Index", Vector2.new(1000, 660), Lib.Colors.Orange, "📖")
 	local body = win.body
 
 	-- progress bar
