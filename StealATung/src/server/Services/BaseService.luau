@@ -1,7 +1,8 @@
 --!strict
 -- Bases: assignment, placed Tung models, per-pad income (capped at 1 hour),
 -- Collect / Collect All, base lock + laser gate, selling, rebirth, Tungs that
--- follow you home after buying, alarms and the gate sign.
+-- follow you home after buying, picking up / moving / selling your own Tungs
+-- right in the base, alarms, and the owner name above the roof.
 --
 -- Every slot change goes through this module. StealService plugs in through
 -- BaseService.Hooks so the two don't require each other.
@@ -36,6 +37,8 @@ export type BaseState = {
 	tungs: { [number]: Model }, -- slot -> placed model
 	stolen: { [number]: Player }, -- slot -> thief carrying it
 	arriving: { [number]: number }, -- slot -> os.clock() it was bought (following the owner)
+	held: number?, -- slot of the Tung the owner picked up (it follows them until placed)
+	heldOutside: number?, -- os.clock() the owner left the base while holding one
 	locked: boolean,
 	lockEnds: number,
 	lockReady: number,
@@ -119,6 +122,16 @@ local function setFollowing(player: Player)
 	player:SetAttribute("Following", table.concat(list, ","))
 end
 
+-- "id|mutation" of the Tung the player picked up in their own base (it follows them).
+local function setHolding(player: Player)
+	local i = baseOf[player]
+	local st = i and bases[i]
+	local slot = st and st.held
+	local p = DataService.Get(player)
+	local e = slot and p and p.data.slots[key(slot)]
+	player:SetAttribute("Holding", if e then e.id .. "|" .. (e.m or Mutations.NONE) else nil)
+end
+
 -- Pad visuals ---------------------------------------------------------------------------------
 local function padParts(st: BaseState, slot: number): (BasePart?, BasePart?)
 	local model = st.model
@@ -158,6 +171,18 @@ local function setPadLook(st: BaseState, slot: number, entry: any?)
 	local counter = button:FindFirstChild("Counter") :: BillboardGui?
 	if counter then
 		counter.Enabled = t ~= nil
+	end
+end
+
+-- Pad of a Tung the owner is carrying around: empty pad, "WITH YOU" on the counter.
+local function setPadHeld(st: BaseState, slot: number)
+	setPadLook(st, slot, nil)
+	local _, button = padParts(st, slot)
+	local counter = button and button:FindFirstChild("Counter") :: BillboardGui?
+	local label = counter and counter:FindFirstChild("Amount") :: TextLabel?
+	if counter and label then
+		counter.Enabled = true
+		label.Text = "🐾 WITH YOU"
 	end
 end
 
@@ -214,6 +239,30 @@ local function placeModel(st: BaseState, slot: number, entry: any, fx: boolean?)
 		pr.Parent = model.PrimaryPart
 		CollectionService:AddTag(pr, "StealPrompt")
 	end
+	-- owner-only prompts: pick it up (it follows you to another pad) or sell it right here
+	local function ownPrompt(name: string, action: string, text: string, keyCode: Enum.KeyCode, padCode: Enum.KeyCode, hold: number)
+		local pr = Instance.new("ProximityPrompt")
+		pr.Name = name
+		pr.ActionText = text
+		pr.ObjectText = Mutations.Prefix(entry.m) .. t.name
+		pr.KeyboardKeyCode = keyCode
+		pr.GamepadKeyCode = padCode
+		pr.HoldDuration = hold
+		pr.MaxActivationDistance = 9
+		pr.RequiresLineOfSight = false
+		pr.Style = Enum.ProximityPromptStyle.Custom
+		pr:SetAttribute("Action", action)
+		pr:SetAttribute("Base", st.index)
+		pr:SetAttribute("Slot", slot)
+		pr:SetAttribute("OwnerId", owner.UserId)
+		pr:SetAttribute("OwnerOnly", true)
+		pr.Parent = model.PrimaryPart
+		CollectionService:AddTag(pr, "OwnPrompt")
+	end
+	ownPrompt("PickUpPrompt", "PickUp", "Pick Up", Enum.KeyCode.E, Enum.KeyCode.ButtonX, 0)
+	if not t.bound then
+		ownPrompt("SellPrompt", "Sell", "Sell", Enum.KeyCode.F, Enum.KeyCode.ButtonY, 0.8)
+	end
 	model.Parent = st.model
 	st.tungs[slot] = model
 	setPadLook(st, slot, entry)
@@ -224,73 +273,42 @@ local function placeModel(st: BaseState, slot: number, entry: any, fx: boolean?)
 end
 
 -- Base (re)building --------------------------------------------------------------------------------
-local function signText(st: BaseState): (string, string)
-	local owner = st.owner
-	if not owner then
-		return "Empty Base", ""
+-- Owner name above the roof, and lock / new-player shield status above the door.
+local function refreshHeadline(st: BaseState)
+	local model = st.model
+	if not model then
+		return
 	end
-	local p = DataService.Get(owner)
-	local status = {}
-	if p then
-		table.insert(status, "Rebirth " .. p.data.rebirths)
-		local shield = Economy.SHIELD_SECONDS - p.data.playtime
-		if shield > 0 then
-			table.insert(status, "🛡️ " .. Format.Time(shield))
+	local owner = st.owner
+	local anchor = model:FindFirstChild("Headline")
+	local head = anchor and anchor:FindFirstChild("OwnerGui") :: BillboardGui?
+	if head then
+		head.Enabled = owner ~= nil
+		local l = head:FindFirstChild("OwnerName") :: TextLabel?
+		local text = if owner then owner.DisplayName .. "'s Base" else ""
+		if l and l.Text ~= text then
+			l.Text = text
 		end
 	end
-	if st.locked then
-		table.insert(status, "🔒 " .. Format.Time(st.lockEnds - now()))
-	end
-	return owner.DisplayName .. "'s Base", table.concat(status, "  ·  ")
-end
-
-local function refreshSign(st: BaseState)
-	local model = st.model
-	local sign = model and model:FindFirstChild("Sign")
-	local gui = sign and sign:FindFirstChild("SignGui")
-	if not gui then
-		return
-	end
-	local name, status = signText(st)
-	local nameLabel = gui:FindFirstChild("OwnerName") :: TextLabel?
-	local statusLabel = gui:FindFirstChild("Status") :: TextLabel?
-	if nameLabel and nameLabel.Text ~= name then
-		nameLabel.Text = name
-	end
-	if statusLabel and statusLabel.Text ~= status then
-		statusLabel.Text = status
-	end
-end
-
-local thumbCache: { [number]: string } = {}
-local function setAvatar(st: BaseState)
-	local owner = st.owner
-	local model = st.model
-	local gui = model and model:FindFirstChild("Sign") and (model :: any).Sign:FindFirstChild("SignGui")
-	local avatar = gui and gui:FindFirstChild("Avatar") :: ImageLabel?
-	if not avatar then
-		return
-	end
-	if not owner then
-		avatar.Image = ""
-		return
-	end
-	local uid = owner.UserId
-	if thumbCache[uid] then
-		avatar.Image = thumbCache[uid]
-		return
-	end
-	task.spawn(function()
-		local ok, img = pcall(function()
-			return Players:GetUserThumbnailAsync(math.max(uid, 1), Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
-		end)
-		if ok and img then
-			thumbCache[uid] = img
-			if st.owner == owner and avatar.Parent then
-				avatar.Image = img
+	local doorAnchor = model:FindFirstChild("DoorStatus")
+	local door = doorAnchor and doorAnchor:FindFirstChild("DoorGui") :: BillboardGui?
+	if door then
+		local status = ""
+		if owner then
+			local p = DataService.Get(owner)
+			local shield = if p then Economy.SHIELD_SECONDS - p.data.playtime else 0
+			if st.locked then
+				status = "🔒 LOCKED " .. Format.Time(st.lockEnds - now())
+			elseif shield > 0 then
+				status = "🛡️ PROTECTED " .. Format.Time(shield)
 			end
 		end
-	end)
+		door.Enabled = status ~= ""
+		local l = door:FindFirstChild("Status") :: TextLabel?
+		if l and l.Text ~= status then
+			l.Text = status
+		end
+	end
 end
 
 local function setLasers(st: BaseState)
@@ -353,12 +371,13 @@ function BaseService.Rebuild(i: number)
 	model:SetAttribute("PersonalBelt", info.personalBelt)
 	st.model = model
 	setLasers(st)
-	refreshSign(st)
-	setAvatar(st)
+	refreshHeadline(st)
 	if data then
 		for k, entry in data.slots do
 			local slot = tonumber(k) :: number
-			if not st.stolen[slot] and not st.arriving[slot] then
+			if st.held == slot then
+				setPadHeld(st, slot)
+			elseif not st.stolen[slot] and not st.arriving[slot] then
 				placeModel(st, slot, entry)
 			end
 		end
@@ -442,6 +461,11 @@ function BaseService.RemoveTung(player: Player, slot: number): any?
 	local st = bases[i]
 	st.stolen[slot] = nil
 	st.arriving[slot] = nil
+	if st.held == slot then
+		st.held = nil
+		st.heldOutside = nil
+		setHolding(player)
+	end
 	removeModel(st, slot)
 	setFollowing(player)
 	DataService.MarkDirty(player, true)
@@ -640,7 +664,7 @@ function BaseService.Lock(player: Player): (boolean, any)
 	st.lockEnds = t + Economy.LockDuration(p.data)
 	st.lockReady = t + Economy.LOCK_COOLDOWN
 	setLasers(st)
-	refreshSign(st)
+	refreshHeadline(st)
 	EconomyService.Notify(player, "🔒 Base locked for " .. Economy.LockDuration(p.data) .. " seconds!", "success")
 	return true, st.lockEnds
 end
@@ -649,7 +673,7 @@ local function unlock(st: BaseState)
 	if st.locked then
 		st.locked = false
 		setLasers(st)
-		refreshSign(st)
+		refreshHeadline(st)
 	end
 end
 
@@ -695,6 +719,126 @@ function BaseService.Sell(player: Player, slot: number): (boolean, any)
 	return true, price
 end
 
+-- Moving your own Tungs ----------------------------------------------------------------------------------------------
+-- Pick one up and it follows you around (it earns nothing while it's off its
+-- pad, and nobody can steal it). Press "Place Here" on any pad in your base to
+-- put it down there; on a pad that already has a Tung, the two swap places.
+local HELD_OUTSIDE_LIMIT = 60 -- seconds outside your base before a held Tung hops back home
+
+local function nearPos(player: Player, pos: Vector3, range: number): boolean
+	local character = player.Character
+	local hrp = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	return hrp ~= nil and (hrp.Position - pos).Magnitude <= range
+end
+
+-- Puts a held Tung back on its own pad.
+local function returnHeld(st: BaseState)
+	local slot = st.held
+	if not slot then
+		return
+	end
+	st.held = nil
+	st.heldOutside = nil
+	local owner = st.owner
+	local entry = owner and BaseService.Entry(owner, slot)
+	if entry then
+		placeModel(st, slot, entry, true)
+	else
+		setPadLook(st, slot, nil)
+	end
+	if owner then
+		setHolding(owner)
+	end
+end
+
+function BaseService.ReturnHeld(player: Player)
+	local i = baseOf[player]
+	if i then
+		returnHeld(bases[i])
+	end
+end
+
+function BaseService.PickUp(player: Player, slot: number): (boolean, any)
+	local i = baseOf[player]
+	local p = DataService.Get(player)
+	if not i or not p then
+		return false, "Still loading"
+	end
+	local st = bases[i]
+	if st.held then
+		return false, "You're already holding a Tung. Place it first!"
+	end
+	if player:GetAttribute("Carrying") then
+		return false, "Your hands are full!"
+	end
+	local entry = p.data.slots[key(slot)]
+	local model = st.tungs[slot]
+	if not entry or not model then
+		return false, "Nothing to pick up there"
+	end
+	if st.stolen[slot] or st.arriving[slot] then
+		return false, "Not right now"
+	end
+	if not nearPos(player, model:GetPivot().Position, 16) then
+		return false, "Get closer"
+	end
+	BaseService.Collect(player, slot) -- bank its cash so nothing is lost while it's off the pad
+	st.held = slot
+	st.heldOutside = nil
+	removeModel(st, slot)
+	setPadHeld(st, slot)
+	setHolding(player)
+	local t = Tungs.Get(entry.id)
+	EconomyService.Notify(player, "🐾 " .. Mutations.Prefix(entry.m) .. (if t then t.name else "Tung") .. " is following you. Press Place Here on any pad!", "info")
+	return true, slot
+end
+
+function BaseService.Place(player: Player, target: number): (boolean, any)
+	local i = baseOf[player]
+	local p = DataService.Get(player)
+	if not i or not p then
+		return false, "Still loading"
+	end
+	local st = bases[i]
+	local from = st.held
+	if not from then
+		return false, "Pick up one of your Tungs first"
+	end
+	local data = p.data
+	if target < 1 or target > Economy.Slots(data) or target ~= math.floor(target) then
+		return false, "That pad doesn't exist"
+	end
+	if st.stolen[target] or st.arriving[target] then
+		return false, "That pad is busy right now"
+	end
+	if not nearPos(player, Layout.PadCFrame(i, target, st.slots).Position, 16) then
+		return false, "Get closer to the pad"
+	end
+	local a = data.slots[key(from)]
+	if not a then
+		st.held = nil
+		setHolding(player)
+		return false, "That Tung is gone"
+	end
+	local b = data.slots[key(target)]
+	st.held = nil
+	st.heldOutside = nil
+	if target ~= from then
+		data.slots[key(target)] = a
+		data.slots[key(from)] = b -- nil when the target pad was empty
+		if b then
+			removeModel(st, target)
+			placeModel(st, from, b, true)
+		else
+			setPadLook(st, from, nil)
+		end
+	end
+	placeModel(st, target, a, true)
+	setHolding(player)
+	DataService.MarkDirty(player, true)
+	return true, target
+end
+
 -- Rebirth -------------------------------------------------------------------------------------------------------------
 function BaseService.Rebirth(player: Player, useSkip: boolean): (boolean, any)
 	local i = baseOf[player]
@@ -713,6 +857,7 @@ function BaseService.Rebirth(player: Player, useSkip: boolean): (boolean, any)
 	local st = bases[i]
 	BaseService.Hooks.CancelStealsFrom(player)
 	BaseService.Hooks.DropCarried(player, "rebirth")
+	returnHeld(st)
 
 	-- cinematic: every Tung flies into the sky
 	local flying = {}
@@ -773,6 +918,8 @@ local function assign(player: Player)
 			st.lockReady = 0
 			st.stolen = {}
 			st.arriving = {}
+			st.held = nil
+			st.heldOutside = nil
 			st.alarmCooldown = {}
 			baseOf[player] = i
 			player:SetAttribute("Base", i)
@@ -799,6 +946,9 @@ local function release(player: Player)
 	st.locked = false
 	st.stolen = {}
 	st.arriving = {}
+	st.held = nil -- still in its slot in the save
+	st.heldOutside = nil
+	player:SetAttribute("Holding", nil)
 	baseOf[player] = nil
 	lastTouch[player] = nil
 	BaseService.Rebuild(i)
@@ -832,7 +982,7 @@ local function incomeTick()
 		if not st.locked and t >= st.lockReady and Economy.HasPass(data, "AutoLock") and Workspace:GetAttribute("Event") ~= "ThiefNight" then
 			BaseService.Lock(owner)
 		end
-		refreshSign(st)
+		refreshHeadline(st)
 		local shieldLeft = Economy.SHIELD_SECONDS - data.playtime
 		owner:SetAttribute("Shielded", shieldLeft > 0)
 		DataService.MarkDirty(owner)
@@ -856,12 +1006,12 @@ local function alarm(st: BaseState, intruder: Player)
 	if siren and light then
 		local snd = Instance.new("Sound")
 		snd.SoundId = "rbxasset://sounds/electronicpingshort.wav"
-		snd.PlaybackSpeed = 1.6
-		snd.Volume = 1
-		snd.RollOffMaxDistance = 160
+		snd.PlaybackSpeed = 1.4
+		snd.Volume = 0.35
+		snd.RollOffMaxDistance = 90
 		snd.Parent = siren
 		task.spawn(function()
-			for _ = 1, 6 do
+			for _ = 1, 4 do
 				light.Brightness = 6
 				snd:Play()
 				task.wait(0.25)
@@ -892,6 +1042,16 @@ local function zoneTick()
 		local own = baseOf[player]
 		if own then
 			local st = bases[own]
+			if st.held then
+				if inBase == own then
+					st.heldOutside = nil
+				elseif not st.heldOutside then
+					st.heldOutside = os.clock()
+				elseif os.clock() - (st.heldOutside :: number) > HELD_OUTSIDE_LIMIT then
+					returnHeld(st)
+					EconomyService.Notify(player, "🏠 Your Tung got homesick and hopped back onto its pad", "info")
+				end
+			end
 			if inBase == own and next(st.arriving) then
 				BaseService.Arrive(player)
 			else
@@ -931,6 +1091,8 @@ function BaseService.Init()
 			tungs = {},
 			stolen = {},
 			arriving = {},
+			held = nil,
+			heldOutside = nil,
 			locked = false,
 			lockEnds = 0,
 			lockReady = 0,
@@ -980,15 +1142,34 @@ function BaseService.Init()
 		if prompt:GetAttribute("OwnerOnly") and ownerId ~= player.UserId then
 			return
 		end
+		local slot = tonumber(prompt:GetAttribute("Slot")) or 0
+		local ok, msg = true, nil
 		if action == "Lock" then
-			local ok, msg = BaseService.Lock(player)
-			if not ok and msg then
-				EconomyService.Notify(player, msg, "error")
-			end
+			ok, msg = BaseService.Lock(player)
+		elseif action == "PickUp" then
+			ok, msg = BaseService.PickUp(player, slot)
+		elseif action == "Place" then
+			ok, msg = BaseService.Place(player, slot)
+		elseif action == "Sell" then
+			ok, msg = BaseService.Sell(player, slot)
 		elseif type(ui) == "string" then
 			Remotes.Event("OpenUI"):FireClient(player, ui)
 		end
+		if not ok and type(msg) == "string" then
+			EconomyService.Notify(player, msg, "error")
+		end
 	end)
+
+	-- a held Tung goes back to its pad when you respawn
+	local function hookCharacter(player: Player)
+		player.CharacterRemoving:Connect(function()
+			BaseService.ReturnHeld(player)
+		end)
+	end
+	Players.PlayerAdded:Connect(hookCharacter)
+	for _, player in Players:GetPlayers() do
+		hookCharacter(player)
+	end
 
 	task.spawn(function()
 		while true do

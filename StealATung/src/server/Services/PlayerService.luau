@@ -115,7 +115,7 @@ local function makeBat(tier: number): Tool
 	swing.Name = "SwingSound"
 	swing.SoundId = "rbxasset://sounds/swordslash.wav"
 	swing.PlaybackSpeed = 0.8
-	swing.Volume = 0.6
+	swing.Volume = 0.3
 	swing.Parent = handle
 	return tool
 end

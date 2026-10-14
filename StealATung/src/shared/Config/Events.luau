@@ -21,7 +21,7 @@ Events.List = {
 	{ key = "SahurHour", name = "Sahur Hour", icon = "🌙", color = Color3.fromRGB(140, 60, 220), desc = "Secret & Mythic chances x3!", random = true },
 	{ key = "TungRain", name = "Tung Rain", icon = "🌧️", color = Color3.fromRGB(70, 170, 255), desc = "Free Tungs are falling from the sky! Touch one to keep it.", random = true },
 	{ key = "GoldenBelt", name = "Golden Belt", icon = "✨", color = Color3.fromRGB(255, 195, 40), desc = "Every Tung on the belt is Gold!", random = true },
-	{ key = "SpeedBelt", name = "Speed Belt", icon = "⚡", color = Color3.fromRGB(255, 120, 40), desc = "The belt runs 2x faster and spawns 2x as often!", random = true },
+	{ key = "SpeedBelt", name = "Speed Belt", icon = "⚡", color = Color3.fromRGB(255, 120, 40), desc = "The belt runs faster and spawns 2x as often!", random = true },
 	{ key = "ThiefNight", name = "Thief Night", icon = "🦹", color = Color3.fromRGB(220, 40, 70), desc = "Steal in 0.75 s and base locks are OFF. Chaos!", random = true },
 	{ key = "AdminAbuse", name = "ADMIN ABUSE", icon = "👑", color = Color3.fromRGB(255, 60, 160), desc = "Luck x3, every Tung is Gold, and the admin is spawning Tungs!", random = false },
 } :: { Event }

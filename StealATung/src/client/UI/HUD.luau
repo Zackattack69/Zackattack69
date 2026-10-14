@@ -145,6 +145,7 @@ function HUD.Build(gui: ScreenGui, panels: any)
 	local carryChip, carryText = chip(strips, 1, 580, 46, C.Red, C.Red2)
 	carryText.Font = Lib.FontTitle
 	Lib.shine(carryChip)
+	local holdChip, holdText = chip(strips, 2, 580, 40, C.Blue, C.Blue2)
 	local followChip, followText = chip(strips, 2, 560, 38, C.Blue, C.Blue2)
 	local pendingChip, pendingText = chip(strips, 3, 540, 36, C.Orange, C.Orange2)
 
@@ -303,6 +304,13 @@ function HUD.Build(gui: ScreenGui, panels: any)
 				local id, mut = string.match(carrying, "^([^|]+)|?(.*)$")
 				local tung = id and Tungs.Get(id)
 				carryText.Text = "🦹 CARRYING " .. string.upper(Mutations.Prefix(mut) .. (if tung then tung.name else "TUNG")) .. "! RUN HOME!"
+			end
+			local held = player:GetAttribute("Holding") :: string?
+			holdChip.Visible = held ~= nil and held ~= ""
+			if holdChip.Visible and held then
+				local id, mut = string.match(held, "^([^|]+)|?(.*)$")
+				local tung = id and Tungs.Get(id)
+				holdText.Text = "🐾 " .. Mutations.Prefix(mut) .. (if tung then tung.name else "Your Tung") .. " is with you. Press Place Here on any pad!"
 			end
 			local following = (player:GetAttribute("Following") :: string?) or ""
 			local nFollow = if following == "" then 0 else #string.split(following, ",")

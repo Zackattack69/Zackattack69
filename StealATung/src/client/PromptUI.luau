@@ -2,13 +2,21 @@
 -- Custom ProximityPrompt UI: every prompt (Buy, Steal, Lock, Shop, Rebirth...)
 -- shows as a big tappable button above the bottom-centre of the screen, with a
 -- hold-progress fill and the key hint. Also hides prompts that aren't for you
--- (your own Tungs' Steal prompts, other players' altars and lock buttons) and
--- greys out Steal prompts on locked or shielded bases.
+-- (your own Tungs' Steal prompts, other players' altars and lock buttons),
+-- greys out Steal prompts on locked or shielded bases (or from outside the
+-- walls), and switches your own Tungs' prompts: Pick Up / Sell normally, and
+-- Place Here on every pad while one of your Tungs is following you.
 
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local UserInputService = game:GetService("UserInputService")
 
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local Economy = require(Shared.Config.Economy)
+local Format = require(Shared.Util.Format)
+
+local State = require(script.Parent.State)
 local Lib = require(script.Parent.UI.Lib)
 
 local PromptUI = {}
@@ -60,18 +68,57 @@ local function blockedReason(prompt: ProximityPrompt): string?
 		if owner and owner:GetAttribute("Shielded") then
 			return "🛡️ New player shield"
 		end
-		if player:GetAttribute("Carrying") then
+		if player:GetAttribute("Carrying") or player:GetAttribute("Holding") then
 			return "Hands full!"
+		end
+		local i = base and base:GetAttribute("Index")
+		if i and player:GetAttribute("InBase") ~= i then
+			return "🚪 Go in through the door"
 		end
 	end
 	return nil
+end
+
+-- Your own Tungs: Pick Up / Sell while your hands are free, Place Here on the pads while one follows you.
+local function holding(): boolean
+	local h = player:GetAttribute("Holding") :: string?
+	return h ~= nil and h ~= ""
+end
+
+local function syncOwnPrompt(prompt: Instance)
+	if not prompt:IsA("ProximityPrompt") then
+		return
+	end
+	local mine = ownerIdOf(prompt) == player.UserId
+	local action = prompt:GetAttribute("Action")
+	if action == "Place" then
+		prompt.Enabled = mine and holding()
+	else
+		prompt.Enabled = mine and not holding()
+	end
+end
+
+local function syncOwnPrompts()
+	for _, prompt in CollectionService:GetTagged("OwnPrompt") do
+		syncOwnPrompt(prompt)
+	end
+end
+
+-- Live sell price (base price + the cash it's holding) for the Sell prompt.
+local function sellText(prompt: ProximityPrompt): string
+	local d = State.data
+	local e = d and d.slots and d.slots[tostring(prompt:GetAttribute("Slot"))]
+	if not e then
+		return "Sell"
+	end
+	return "Sell " .. Format.Money(Economy.SellPrice(e.id, e.m) + math.floor(e.s or 0))
 end
 
 local function keyHint(prompt: ProximityPrompt, inputType: Enum.ProximityPromptInputType): string
 	if inputType == Enum.ProximityPromptInputType.Touch then
 		return if prompt.HoldDuration > 0 then "HOLD" else "TAP"
 	elseif inputType == Enum.ProximityPromptInputType.Gamepad then
-		return "X"
+		return (string.gsub(prompt.GamepadKeyCode.Name, "Button", ""))
 	end
 	return UserInputService:GetStringForKeyCode(prompt.KeyboardKeyCode)
 end
@@ -82,7 +129,9 @@ local function colorFor(prompt: ProximityPrompt): (Color3, Color3)
 		return C.Red, C.Red2
 	elseif action == "Lock" then
 		return C.Purple, C.Purple2
-	elseif prompt:GetAttribute("EntryId") then
+	elseif action == "PickUp" or action == "Place" then
+		return C.Blue, C.Blue2
+	elseif action == "Sell" or prompt:GetAttribute("EntryId") then
 		return C.Money, C.Money2
 	end
 	return C.Gold, C.Gold2
@@ -90,7 +139,8 @@ end
 
 local function refresh(card: Card)
 	local reason = blockedReason(card.prompt)
-	card.action.Text = if reason then reason else card.prompt.ActionText
+	local actionText = if card.prompt:GetAttribute("Action") == "Sell" then sellText(card.prompt) else card.prompt.ActionText
+	card.action.Text = if reason then reason else actionText
 	card.object.Text = card.prompt.ObjectText
 	if reason then
 		Lib.recolor(card.frame, C.Grey, C.Grey2)
@@ -190,6 +240,10 @@ function PromptUI.Init(gui: ScreenGui)
 	Lib.hudFit(holder)
 	local list = Lib.list(holder, 10, false, Enum.HorizontalAlignment.Center)
 	list.VerticalAlignment = Enum.VerticalAlignment.Bottom
+
+	CollectionService:GetInstanceAddedSignal("OwnPrompt"):Connect(syncOwnPrompt)
+	player:GetAttributeChangedSignal("Holding"):Connect(syncOwnPrompts)
+	syncOwnPrompts()
 
 	ProximityPromptService.PromptShown:Connect(show)
 	ProximityPromptService.PromptHidden:Connect(hide)

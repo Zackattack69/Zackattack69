@@ -1,13 +1,17 @@
 --!strict
--- Builds one player base: a fenced plot whose look depends on the rebirth
--- level (wooden fence -> stone -> bamboo dojo -> crystal garden -> sky island
--- -> volcano fortress -> space station -> golden temple), with glowing pads,
--- round Collect buttons, the gate sign, the Rebirth Altar, the lock button and
--- laser gate, owned traps and (Rebirth 6+) the personal belt.
+-- Builds one player base: a closed box building (walls, window bands, a roof)
+-- whose only way in or out is the laser door at the front. Its colours depend
+-- on the rebirth level (wood -> stone -> bamboo dojo -> crystal -> sky -> volcano
+-- -> space station -> golden temple). Inside: glowing pads, round Collect
+-- buttons, stairs, the Rebirth Altar, the lock button, owned traps and
+-- (Rebirth 6+) the personal belt. The owner's name floats above the roof.
 --
 -- Rebuilt from scratch whenever the base grows or changes look. BaseService
--- relies only on these names: Pads/Pad<n>, Buttons/Button<n>, Sign, Altar,
--- LockButton, Lasers, Traps/<Banana|Honey|Alarm>, PersonalBelt.
+-- relies only on these names: Pads/Pad<n>(/PlacePrompt), Buttons/Button<n>,
+-- Headline/OwnerGui, DoorStatus/DoorGui, Altar, LockButton, Lasers,
+-- Traps/<Banana|Honey|Alarm>, PersonalBelt.
+
+local CollectionService = game:GetService("CollectionService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Economy = require(Shared.Config.Economy)
@@ -26,7 +30,6 @@ export type Theme = {
 	floorMat: Enum.Material,
 	wall: Color3,
 	wallMat: Enum.Material,
-	wallHeight: number,
 	post: Color3,
 	postMat: Enum.Material,
 	postRound: boolean?,
@@ -39,14 +42,14 @@ export type Theme = {
 
 BaseBuilder.THEMES = {
 	-- toy-plastic palettes, toned down so nothing glares; materials go through Style.Material
-	Wood = { floor = Color3.fromRGB(214, 170, 118), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(196, 120, 62), wallMat = M.SmoothPlastic, wallHeight = 4, post = Color3.fromRGB(150, 88, 44), postMat = M.SmoothPlastic, cap = Color3.fromRGB(232, 176, 70), capMat = M.SmoothPlastic, pad = Color3.fromRGB(226, 210, 176), accent = Color3.fromRGB(232, 176, 40) },
-	Stone = { floor = Color3.fromRGB(168, 174, 192), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(140, 148, 172), wallMat = M.SmoothPlastic, wallHeight = 5.5, post = Color3.fromRGB(100, 108, 138), postMat = M.SmoothPlastic, cap = Color3.fromRGB(70, 150, 230), capMat = M.SmoothPlastic, pad = Color3.fromRGB(205, 210, 226), accent = Color3.fromRGB(70, 150, 230) },
-	Bamboo = { floor = Color3.fromRGB(214, 186, 136), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(100, 180, 70), wallMat = M.SmoothPlastic, wallHeight = 5, post = Color3.fromRGB(60, 140, 52), postMat = M.SmoothPlastic, postRound = true, cap = Color3.fromRGB(210, 50, 56), capMat = M.SmoothPlastic, pad = Color3.fromRGB(230, 214, 184), accent = Color3.fromRGB(220, 60, 76) },
-	Crystal = { floor = Color3.fromRGB(214, 186, 220), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(150, 210, 240), wallMat = M.Glass, wallHeight = 5, post = Color3.fromRGB(220, 100, 200), postMat = M.SmoothPlastic, cap = Color3.fromRGB(100, 210, 235), capMat = M.SmoothPlastic, pad = Color3.fromRGB(232, 214, 236), accent = Color3.fromRGB(226, 100, 210), wallTransparency = 0.3 },
-	Sky = { floor = Color3.fromRGB(206, 222, 240), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(110, 180, 236), wallMat = M.SmoothPlastic, wallHeight = 3, post = Color3.fromRGB(236, 240, 248), postMat = M.SmoothPlastic, postRound = true, cap = Color3.fromRGB(240, 210, 80), capMat = M.SmoothPlastic, pad = Color3.fromRGB(226, 236, 248), accent = Color3.fromRGB(70, 170, 236) },
-	Volcano = { floor = Color3.fromRGB(80, 44, 48), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(130, 40, 44), wallMat = M.SmoothPlastic, wallHeight = 6, post = Color3.fromRGB(64, 30, 34), postMat = M.SmoothPlastic, cap = Color3.fromRGB(240, 110, 24), capMat = M.SmoothPlastic, pad = Color3.fromRGB(210, 160, 130), accent = Color3.fromRGB(240, 100, 24) },
-	Space = { floor = Color3.fromRGB(44, 48, 90), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(86, 96, 156), wallMat = M.SmoothPlastic, wallHeight = 5, post = Color3.fromRGB(56, 60, 112), postMat = M.SmoothPlastic, cap = Color3.fromRGB(56, 210, 236), capMat = M.SmoothPlastic, pad = Color3.fromRGB(176, 190, 236), accent = Color3.fromRGB(56, 210, 236) },
-	Golden = { floor = Color3.fromRGB(232, 218, 182), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(232, 180, 40), wallMat = M.Foil, wallHeight = 6, post = Color3.fromRGB(240, 236, 226), postMat = M.SmoothPlastic, cap = Color3.fromRGB(236, 190, 50), capMat = M.Foil, pad = Color3.fromRGB(236, 220, 180), accent = Color3.fromRGB(236, 186, 36) },
+	Wood = { floor = Color3.fromRGB(214, 170, 118), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(196, 120, 62), wallMat = M.SmoothPlastic, post = Color3.fromRGB(150, 88, 44), postMat = M.SmoothPlastic, cap = Color3.fromRGB(232, 176, 70), capMat = M.SmoothPlastic, pad = Color3.fromRGB(226, 210, 176), accent = Color3.fromRGB(232, 176, 40) },
+	Stone = { floor = Color3.fromRGB(168, 174, 192), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(140, 148, 172), wallMat = M.SmoothPlastic, post = Color3.fromRGB(100, 108, 138), postMat = M.SmoothPlastic, cap = Color3.fromRGB(70, 150, 230), capMat = M.SmoothPlastic, pad = Color3.fromRGB(205, 210, 226), accent = Color3.fromRGB(70, 150, 230) },
+	Bamboo = { floor = Color3.fromRGB(214, 186, 136), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(100, 180, 70), wallMat = M.SmoothPlastic, post = Color3.fromRGB(60, 140, 52), postMat = M.SmoothPlastic, postRound = true, cap = Color3.fromRGB(210, 50, 56), capMat = M.SmoothPlastic, pad = Color3.fromRGB(230, 214, 184), accent = Color3.fromRGB(220, 60, 76) },
+	Crystal = { floor = Color3.fromRGB(214, 186, 220), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(150, 210, 240), wallMat = M.Glass, post = Color3.fromRGB(220, 100, 200), postMat = M.SmoothPlastic, cap = Color3.fromRGB(100, 210, 235), capMat = M.SmoothPlastic, pad = Color3.fromRGB(232, 214, 236), accent = Color3.fromRGB(226, 100, 210), wallTransparency = 0.3 },
+	Sky = { floor = Color3.fromRGB(206, 222, 240), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(110, 180, 236), wallMat = M.SmoothPlastic, post = Color3.fromRGB(236, 240, 248), postMat = M.SmoothPlastic, postRound = true, cap = Color3.fromRGB(240, 210, 80), capMat = M.SmoothPlastic, pad = Color3.fromRGB(226, 236, 248), accent = Color3.fromRGB(70, 170, 236) },
+	Volcano = { floor = Color3.fromRGB(80, 44, 48), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(130, 40, 44), wallMat = M.SmoothPlastic, post = Color3.fromRGB(64, 30, 34), postMat = M.SmoothPlastic, cap = Color3.fromRGB(240, 110, 24), capMat = M.SmoothPlastic, pad = Color3.fromRGB(210, 160, 130), accent = Color3.fromRGB(240, 100, 24) },
+	Space = { floor = Color3.fromRGB(44, 48, 90), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(86, 96, 156), wallMat = M.SmoothPlastic, post = Color3.fromRGB(56, 60, 112), postMat = M.SmoothPlastic, cap = Color3.fromRGB(56, 210, 236), capMat = M.SmoothPlastic, pad = Color3.fromRGB(176, 190, 236), accent = Color3.fromRGB(56, 210, 236) },
+	Golden = { floor = Color3.fromRGB(232, 218, 182), floorMat = M.SmoothPlastic, wall = Color3.fromRGB(232, 180, 40), wallMat = M.Foil, post = Color3.fromRGB(240, 236, 226), postMat = M.SmoothPlastic, cap = Color3.fromRGB(236, 190, 50), capMat = M.Foil, pad = Color3.fromRGB(236, 220, 180), accent = Color3.fromRGB(236, 186, 36) },
 } :: { [string]: Theme }
 
 export type BuildInfo = {
@@ -125,6 +128,7 @@ function BaseBuilder.Build(parent: Instance, info: BuildInfo): Model
 	local HW = Layout.BASE_WIDTH / 2
 	local FH = Layout.FLOOR_HEIGHT
 	local top = floors * FH
+	local T = Layout.WALL_THICKNESS
 	local gateHalf = Layout.GATE_WIDTH / 2
 	local gold = Color3.fromRGB(255, 200, 50)
 	local trim = if info.golden then gold else theme.cap
@@ -159,96 +163,142 @@ function BaseBuilder.Build(parent: Instance, info: BuildInfo): Model
 	end
 
 	-- Upper floor slabs (with an opening above the stairs that lead up to them) -----------------
+	-- Shell parts don't cast shadows, so daylight still reaches the inside of the box.
 	local structure = folder(base, "Structure")
 	for f = 2, floors do
 		local y0 = Layout.FloorY(f)
 		local s = Layout.StairSide(f - 1)
 		local holeD = Layout.STAIR_BACK + 0.5
 		local props = function(): Props
-			return { Color = theme.floor, Material = theme.floorMat }
+			return { Color = theme.floor, Material = theme.floorMat, CastShadow = false }
 		end
-		box(structure, "Slab", -HW, HW, y0 - 0.6, y0 + 0.4, holeD, D, props())
+		box(structure, "Slab", -HW + T, HW - T, y0 - 0.6, y0 + 0.4, holeD, D - T, props())
 		-- front piece beside the opening
-		box(structure, "Slab", -s * HW, s * Layout.STAIR_INNER, y0 - 0.6, y0 + 0.4, 0, holeD, props())
-		-- coloured edge trim under the slab
-		box(structure, "SlabTrim", -HW - 0.3, HW + 0.3, y0 - 1.2, y0 - 0.6, -0.3, 0.3, { Color = theme.accent, Material = M.SmoothPlastic })
-		box(structure, "SlabTrim", -HW - 0.3, HW + 0.3, y0 - 1.2, y0 - 0.6, D - 0.3, D + 0.3, { Color = theme.accent, Material = M.SmoothPlastic })
-		for _, sx in { -1, 1 } do
-			box(structure, "SlabTrim", sx * HW - 0.3, sx * HW + 0.3, y0 - 1.2, y0 - 0.6, 0, D, { Color = theme.accent, Material = M.SmoothPlastic })
-		end
+		box(structure, "Slab", -s * (HW - T), s * Layout.STAIR_INNER, y0 - 0.6, y0 + 0.4, T, holeD, props())
+		-- low railing around the opening so nobody walks into it by accident
+		box(structure, "HoleRail", s * Layout.STAIR_INNER, s * (HW - T), y0 + 0.4, y0 + 2.6, holeD - 0.15, holeD + 0.15, { Color = trim, Material = trimMat, CastShadow = false })
 	end
 
-	-- Stairs along the front wall, alternating sides floor by floor -----------------------------------
+	-- Stairs along the inside of the front wall, alternating sides floor by floor ---------------------
 	for f = 1, floors - 1 do
 		local y0 = Layout.FloorY(f)
 		local s = Layout.StairSide(f)
-		for k = 1, 14 do
-			local x = s * (Layout.STAIR_OUTER - (k - 0.5))
+		local run = (Layout.STAIR_OUTER - Layout.STAIR_INNER) / FH -- one 1-stud rise per step
+		for k = 1, FH do
+			local x = s * (Layout.STAIR_OUTER - (k - 0.5) * run)
 			P(structure, {
 				Name = "Step",
-				Size = Vector3.new(1, k, Layout.STAIR_BACK - Layout.STAIR_FRONT),
+				Size = Vector3.new(run, k, Layout.STAIR_BACK - Layout.STAIR_FRONT),
 				CFrame = L(x, y0 + Layout.FLOOR_TOP + k / 2, (Layout.STAIR_FRONT + Layout.STAIR_BACK) / 2),
 				Color = if k % 2 == 0 then theme.wall else theme.wall:Lerp(Color3.new(1, 1, 1), 0.15),
 				Material = M.SmoothPlastic,
+				CastShadow = false,
 			})
 		end
 		-- handrail on the open side of the flight
 		local a = L(s * Layout.STAIR_OUTER, y0 + Layout.FLOOR_TOP + 3, Layout.STAIR_BACK + 0.2).Position
-		local b = L(s * Layout.STAIR_INNER, y0 + Layout.FLOOR_TOP + 17, Layout.STAIR_BACK + 0.2).Position
+		local b = L(s * Layout.STAIR_INNER, y0 + Layout.FLOOR_TOP + FH + 3, Layout.STAIR_BACK + 0.2).Position
 		P(structure, { Name = "Handrail", Size = Vector3.new(0.4, 0.4, (b - a).Magnitude), CFrame = CFrame.lookAt((a + b) / 2, b), Color = trim, Material = trimMat, CanCollide = false })
 	end
 
-	-- Walls, railings, pillars ---------------------------------------------------------------------------------
-	local fence = folder(base, "Fence")
-	local h = theme.wallHeight
-	local function wall(y0: number, height: number, x1: number, d1: number, x2: number, d2: number)
-		local a = L(x1, 0, d1).Position
-		local b = L(x2, 0, d2).Position
-		local len = (b - a).Magnitude
-		if len < 0.5 then
+	-- The box: walls with window bands on every floor, the door, the roof ---------------------------------------
+	local shell = folder(base, "Shell")
+	local WB, WT = Layout.WINDOW_BOTTOM, Layout.WINDOW_TOP
+	local function wallProps(): Props
+		return { Color = theme.wall, Material = theme.wallMat, Transparency = theme.wallTransparency or 0, CastShadow = false }
+	end
+	local function glassProps(): Props
+		return { Color = Color3.fromRGB(176, 218, 240), Material = M.Glass, Transparency = 0.55, CastShadow = false }
+	end
+	-- One piece of a face. `u` runs along the face: depth on the side walls
+	-- (0 .. D), x on the front and back walls (inside the side walls).
+	local function facePiece(which: string, name: string, u1: number, u2: number, y1: number, y2: number, props: Props, glass: boolean?)
+		if u2 - u1 < 0.05 or y2 - y1 < 0.05 then
 			return
 		end
-		local cf = CFrame.lookAt((a + b) / 2, b)
-		P(fence, { Name = "Wall", Size = Vector3.new(0.8, height, len), CFrame = cf + Vector3.new(0, y0 + Layout.FLOOR_TOP + height / 2, 0), Color = theme.wall, Material = theme.wallMat, Transparency = theme.wallTransparency or 0 })
-		P(fence, { Name = "Cap", Size = Vector3.new(1.2, 0.5, len + 1), CFrame = cf + Vector3.new(0, y0 + Layout.FLOOR_TOP + height + 0.25, 0), Color = trim, Material = trimMat })
+		local a, b = 0, T -- from the outside surface inwards
+		if glass then
+			a, b = T * 0.3, T * 0.7
+		end
+		if which == "L" then
+			box(shell, name, -HW + a, -HW + b, y1, y2, u1, u2, props)
+		elseif which == "R" then
+			box(shell, name, HW - b, HW - a, y1, y2, u1, u2, props)
+		elseif which == "F" then
+			box(shell, name, u1, u2, y1, y2, a, b, props)
+		else
+			box(shell, name, u1, u2, y1, y2, D - b, D - a, props)
+		end
 	end
-	local W2 = HW - 0.4
-	-- ground floor walls (gap for the gate)
-	wall(0, h, -W2, 0.4, -gateHalf - 1.5, 0.4)
-	wall(0, h, gateHalf + 1.5, 0.4, W2, 0.4)
-	wall(0, h, -W2, 0.4, -W2, D - 0.4)
-	wall(0, h, W2, 0.4, W2, D - 0.4)
-	wall(0, h, -W2, D - 0.4, W2, D - 0.4)
-	-- railings around every upper floor
+	-- the window band of one floor: glass in `windows`, wall everywhere else along u1 .. u2
+	local function windowBand(which: string, y0: number, u1: number, u2: number, windows: { { number } })
+		local u = u1
+		for _, w in windows do
+			facePiece(which, "Wall", u, w[1], y0 + WB, y0 + WT, wallProps())
+			facePiece(which, "Window", w[1], w[2], y0 + WB, y0 + WT, glassProps(), true)
+			u = w[2]
+		end
+		facePiece(which, "Wall", u, u2, y0 + WB, y0 + WT, wallProps())
+	end
+	-- solid wall between the window bands of floor f - 1 and floor f
+	local function bandBottom(f: number): number
+		return if f == 1 then 0 else Layout.FloorY(f - 1) + WT
+	end
+	local function bandTop(f: number): number
+		return if f > floors then top else Layout.FloorY(f) + WB
+	end
+	local SIDE_WINDOWS = { { 5, 30 }, { 34, 59 } }
+	local FRONT_WINDOWS = { { -18, 18 } }
+	local IN = HW - T -- front / back walls sit between the side walls
+	for _, which in { "L", "R" } do
+		for f = 1, floors + 1 do
+			facePiece(which, "Wall", 0, D, bandBottom(f), bandTop(f), wallProps())
+		end
+		for f = 1, floors do
+			windowBand(which, Layout.FloorY(f), 0, D, SIDE_WINDOWS)
+		end
+	end
+	-- front: the door on the ground floor, windows above it
+	facePiece("F", "Wall", -IN, -gateHalf, 0, WT, wallProps())
+	facePiece("F", "Wall", gateHalf, IN, 0, WT, wallProps())
+	facePiece("F", "Wall", -gateHalf, gateHalf, Layout.GATE_HEIGHT, WT, wallProps())
+	for f = 2, floors + 1 do
+		facePiece("F", "Wall", -IN, IN, bandBottom(f), bandTop(f), wallProps())
+	end
 	for f = 2, floors do
-		local y0 = Layout.FloorY(f)
-		wall(y0, 3.2, -W2, 0.4, W2, 0.4)
-		wall(y0, 3.2, -W2, 0.4, -W2, D - 0.4)
-		wall(y0, 3.2, W2, 0.4, W2, D - 0.4)
-		wall(y0, 3.2, -W2, D - 0.4, W2, D - 0.4)
+		windowBand("F", Layout.FloorY(f), -IN, IN, FRONT_WINDOWS)
 	end
-	-- pillars at the corners and halfway along the sides
-	local pillarTop = if floors > 1 then top + 3.6 else h + 1.2
+	-- back: solid
+	facePiece("B", "Wall", -IN, IN, 0, top, wallProps())
+
+	-- roof with a little parapet
+	box(shell, "Roof", -HW, HW, top - 0.6, top + 0.6, 0, D, { Color = theme.wall:Lerp(Color3.new(0, 0, 0), 0.18), Material = theme.wallMat, CastShadow = false })
+	box(shell, "Parapet", -HW - 0.3, HW + 0.3, top + 0.6, top + 2.2, -0.3, 0.7, { Color = trim, Material = trimMat, CastShadow = false })
+	box(shell, "Parapet", -HW - 0.3, HW + 0.3, top + 0.6, top + 2.2, D - 0.7, D + 0.3, { Color = trim, Material = trimMat, CastShadow = false })
 	for _, sx in { -1, 1 } do
-		for _, d in { 0.7, D / 2, D - 0.7 } do
+		box(shell, "Parapet", sx * (HW + 0.3), sx * (HW - 0.7), top + 0.6, top + 2.2, 0.7, D - 0.7, { Color = trim, Material = trimMat, CastShadow = false })
+	end
+	-- corner pillars and a trim belt at every floor line
+	for _, sx in { -1, 1 } do
+		for _, d in { 0, D } do
 			if theme.postRound then
-				P(fence, { Name = "Pillar", Shape = CYL, Size = Vector3.new(pillarTop, 1.6, 1.6), CFrame = L(sx * (HW - 0.7), Layout.FLOOR_TOP + pillarTop / 2, d) * VERT, Color = theme.post, Material = theme.postMat })
+				P(shell, { Name = "Pillar", Shape = CYL, Size = Vector3.new(top + 0.6, 2, 2), CFrame = L(sx * HW, (top + 0.6) / 2, d) * VERT, Color = theme.post, Material = theme.postMat, CastShadow = false })
 			else
-				P(fence, { Name = "Pillar", Size = Vector3.new(1.6, pillarTop, 1.6), CFrame = L(sx * (HW - 0.7), Layout.FLOOR_TOP + pillarTop / 2, d), Color = theme.post, Material = theme.postMat })
+				P(shell, { Name = "Pillar", Size = Vector3.new(1.8, top + 0.6, 1.8), CFrame = L(sx * HW, (top + 0.6) / 2, d), Color = theme.post, Material = theme.postMat, CastShadow = false })
 			end
 		end
 	end
-	-- invisible colliders: the gate is the only way in, and nobody jumps off the upper floors
-	local colliderTop = top + 8
-	local function collider(x1: number, x2: number, y1: number, y2: number, d1: number, d2: number)
-		box(fence, "Collider", x1, x2, y1, y2, d1, d2, { Transparency = 1, CanQuery = false })
+	for f = 2, floors do
+		local y = Layout.FloorY(f)
+		local props = function(): Props
+			return { Color = trim, Material = trimMat, CastShadow = false, CanCollide = false }
+		end
+		box(shell, "Belt", -HW - 0.3, HW + 0.3, y - 0.5, y + 0.3, -0.3, 0.3, props())
+		box(shell, "Belt", -HW - 0.3, HW + 0.3, y - 0.5, y + 0.3, D - 0.3, D + 0.3, props())
+		for _, sx in { -1, 1 } do
+			box(shell, "Belt", sx * (HW + 0.3), sx * (HW - 0.3), y - 0.5, y + 0.3, 0.3, D - 0.3, props())
+		end
 	end
-	collider(-HW - 0.5, -HW + 0.5, 0, colliderTop, 0, D)
-	collider(HW - 0.5, HW + 0.5, 0, colliderTop, 0, D)
-	collider(-HW, HW, 0, colliderTop, D - 0.5, D + 0.5)
-	collider(-HW, -gateHalf - 1.5, 0, colliderTop, -0.5, 0.5)
-	collider(gateHalf + 1.5, HW, 0, colliderTop, -0.5, 0.5)
-	collider(-gateHalf - 1.5, gateHalf + 1.5, Layout.GATE_HEIGHT, colliderTop, -0.5, 0.5)
 
 	-- Theme extras (outside the building so they never block pads) ------------------------------------------
 	local deco = folder(base, "Decor")
@@ -273,14 +323,14 @@ function BaseBuilder.Build(parent: Instance, info: BuildInfo): Model
 		end
 	elseif info.theme == "Stone" then
 		for x = -HW + 2, HW - 2, 4 do
-			P(deco, { Name = "Merlon", Size = Vector3.new(1.8, 1.6, 1.2), CFrame = L(x, (if floors > 1 then top + 3.6 else h) + 1.3, D - 0.4), Color = theme.wall, Material = theme.wallMat })
+			P(deco, { Name = "Merlon", Size = Vector3.new(1.8, 1.6, 1.2), CFrame = L(x, top + 3, 0.2), Color = theme.wall, Material = theme.wallMat })
 		end
 	elseif info.theme == "Bamboo" then
 		for _, sx in { -1, 1 } do
-			P(deco, { Name = "ToriiPost", Shape = CYL, Size = Vector3.new(11, 1.4, 1.4), CFrame = L(sx * 12, 5.5, -7) * VERT, Color = Color3.fromRGB(220, 50, 50), Material = M.SmoothPlastic })
+			P(deco, { Name = "ToriiPost", Shape = CYL, Size = Vector3.new(14, 1.4, 1.4), CFrame = L(sx * 12, 7, -7) * VERT, Color = Color3.fromRGB(220, 50, 50), Material = M.SmoothPlastic })
 		end
-		P(deco, { Name = "ToriiTop", Size = Vector3.new(30, 1.2, 1.8), CFrame = L(0, 11.4, -7), Color = Color3.fromRGB(220, 50, 50), Material = M.SmoothPlastic })
-		P(deco, { Name = "ToriiBeam", Size = Vector3.new(26, 0.8, 1.1), CFrame = L(0, 9.6, -7), Color = Color3.fromRGB(50, 35, 35), Material = M.SmoothPlastic })
+		P(deco, { Name = "ToriiTop", Size = Vector3.new(30, 1.2, 1.8), CFrame = L(0, 14.4, -7), Color = Color3.fromRGB(220, 50, 50), Material = M.SmoothPlastic })
+		P(deco, { Name = "ToriiBeam", Size = Vector3.new(26, 0.8, 1.1), CFrame = L(0, 12.6, -7), Color = Color3.fromRGB(50, 35, 35), Material = M.SmoothPlastic })
 	elseif info.theme == "Crystal" then
 		for k = 1, 12 do
 			local x, d = aroundOutside(k)
@@ -292,7 +342,7 @@ function BaseBuilder.Build(parent: Instance, info: BuildInfo): Model
 			P(deco, { Name = "Cloud", Shape = BALL, Size = Vector3.new(6, 4.5, 6), CFrame = L(x, 1.5, d), Color = Color3.new(1, 1, 1), Material = M.SmoothPlastic, CanCollide = false })
 		end
 		for k = 1, 3 do
-			local at = L(rng:NextNumber(-HW, HW), top + 10 + k * 3, rng:NextNumber(10, D - 10))
+			local at = L(rng:NextNumber(-HW, HW), top + 14 + k * 3, rng:NextNumber(10, D - 10))
 			P(deco, { Name = "IslandRock", Shape = BALL, Size = Vector3.new(6, 5, 6), CFrame = at, Color = Color3.fromRGB(150, 120, 95), Material = M.SmoothPlastic, CanCollide = false })
 			P(deco, { Name = "IslandGrass", Shape = CYL, Size = Vector3.new(1, 6.5, 6.5), CFrame = at * CFrame.new(0, 2, 0) * VERT, Color = Color3.fromRGB(110, 200, 80), Material = M.SmoothPlastic, CanCollide = false })
 		end
@@ -310,9 +360,9 @@ function BaseBuilder.Build(parent: Instance, info: BuildInfo): Model
 		end
 	elseif info.theme == "Space" then
 		for _, sx in { -1, 1 } do
-			P(deco, { Name = "Antenna", Size = Vector3.new(0.5, 12, 0.5), CFrame = L(sx * (HW - 2), top + 6, D - 2), Color = Color3.fromRGB(190, 196, 210), Material = M.Metal })
-			P(deco, { Name = "Dish", Shape = CYL, Size = Vector3.new(0.6, 5, 5), CFrame = L(sx * (HW - 2), top + 12, D - 2) * CFrame.Angles(0, 0, 0.6), Color = Color3.fromRGB(225, 228, 236), Material = M.Metal })
-			P(deco, { Name = "Beacon", Shape = BALL, Size = Vector3.new(0.8, 0.8, 0.8), CFrame = L(sx * (HW - 2), top + 12.8, D - 2), Color = Color3.fromRGB(255, 60, 60), Material = M.Neon, CanCollide = false })
+			P(deco, { Name = "Antenna", Size = Vector3.new(0.5, 12, 0.5), CFrame = L(sx * (HW - 3), top + 6.6, D - 3), Color = Color3.fromRGB(190, 196, 210), Material = M.Metal })
+			P(deco, { Name = "Dish", Shape = CYL, Size = Vector3.new(0.6, 5, 5), CFrame = L(sx * (HW - 3), top + 12.6, D - 3) * CFrame.Angles(0, 0, 0.6), Color = Color3.fromRGB(225, 228, 236), Material = M.Metal })
+			P(deco, { Name = "Beacon", Shape = BALL, Size = Vector3.new(0.8, 0.8, 0.8), CFrame = L(sx * (HW - 3), top + 13.4, D - 3), Color = Color3.fromRGB(255, 60, 60), Material = M.Neon, CanCollide = false })
 		end
 	elseif info.theme == "Golden" then
 		for _, sx in { -1, 1 } do
@@ -321,34 +371,35 @@ function BaseBuilder.Build(parent: Instance, info: BuildInfo): Model
 		end
 	end
 
-	-- Gate + owner sign -----------------------------------------------------------------------------------------
+	-- Door frame + lock / shield status above it -------------------------------------------------------------------
 	for _, sx in { -1, 1 } do
-		P(base, { Name = "GatePost", Size = Vector3.new(1.8, Layout.GATE_HEIGHT + 1, 1.8), CFrame = L(sx * (gateHalf + 1.5), (Layout.GATE_HEIGHT + 1) / 2 + Layout.FLOOR_TOP, 0), Color = theme.post, Material = theme.postMat })
+		P(base, { Name = "GatePost", Size = Vector3.new(1.6, Layout.GATE_HEIGHT + 1, 1.8), CFrame = L(sx * (gateHalf + 0.8), (Layout.GATE_HEIGHT + 1) / 2, 0.2), Color = theme.post, Material = theme.postMat, CastShadow = false })
 	end
-	P(base, { Name = "GateBeam", Size = Vector3.new(Layout.GATE_WIDTH + 5, 1.2, 1.8), CFrame = L(0, Layout.GATE_HEIGHT + 0.6, 0), Color = trim, Material = trimMat })
-	local signY = Layout.GATE_HEIGHT + 4.4
-	local sign = P(base, { Name = "Sign", Size = Vector3.new(18, 6, 0.6), CFrame = L(0, signY, -1.4) * CFrame.Angles(0, math.pi, 0), Color = Color3.fromRGB(40, 36, 70), Material = M.SmoothPlastic })
-	P(base, { Name = "SignFrame", Size = Vector3.new(18.8, 6.8, 0.4), CFrame = L(0, signY, -1.05) * CFrame.Angles(0, math.pi, 0), Color = theme.accent, Material = M.SmoothPlastic })
-	local sg = Instance.new("SurfaceGui")
-	sg.Name = "SignGui"
-	sg.Face = Enum.NormalId.Front
-	sg.PixelsPerStud = 28
-	sg.LightInfluence = 0
-	sg.Parent = sign
-	local avatar = Instance.new("ImageLabel")
-	avatar.Name = "Avatar"
-	avatar.Size = UDim2.fromScale(0.3, 0.9)
-	avatar.Position = UDim2.fromScale(0.02, 0.05)
-	avatar.BackgroundColor3 = Color3.fromRGB(255, 240, 210)
-	avatar.Image = ""
-	local ac = Instance.new("UICorner")
-	ac.CornerRadius = UDim.new(0.2, 0)
-	ac.Parent = avatar
-	local ar = Instance.new("UIAspectRatioConstraint")
-	ar.Parent = avatar
-	avatar.Parent = sg
-	label(sg, "OwnerName", { Text = "Empty Base", Size = UDim2.fromScale(0.64, 0.5), Position = UDim2.fromScale(0.34, 0.05), TextXAlignment = Enum.TextXAlignment.Left })
-	label(sg, "Status", { Text = "", Size = UDim2.fromScale(0.64, 0.34), Position = UDim2.fromScale(0.34, 0.6), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(255, 225, 120) })
+	P(base, { Name = "GateBeam", Size = Vector3.new(Layout.GATE_WIDTH + 3.2, 1.2, 1.8), CFrame = L(0, Layout.GATE_HEIGHT + 0.6, 0.2), Color = trim, Material = trimMat, CastShadow = false })
+	local doorAnchor = P(base, { Name = "DoorStatus", Size = Vector3.new(1, 1, 1), CFrame = L(0, Layout.GATE_HEIGHT + 3, -1.5), Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false })
+	local door = Instance.new("BillboardGui")
+	door.Name = "DoorGui"
+	door.Size = UDim2.fromScale(12, 2.2)
+	door.MaxDistance = 110
+	door.LightInfluence = 0
+	door.Enabled = false
+	label(door, "Status", { Text = "", Size = UDim2.fromScale(1, 1), TextColor3 = Color3.fromRGB(255, 225, 120) })
+	door.Parent = doorAnchor
+
+	-- Owner name floating above the roof (no sign on the building) ---------------------------------------------------------
+	local anchor = P(base, { Name = "Headline", Size = Vector3.new(1, 1, 1), CFrame = L(0, top + 9, D / 2), Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false })
+	local head = Instance.new("BillboardGui")
+	head.Name = "OwnerGui"
+	head.Size = UDim2.fromScale(40, 7)
+	head.MaxDistance = 700
+	head.LightInfluence = 0
+	head.Enabled = false
+	local nameLabel = label(head, "OwnerName", { Text = "", Size = UDim2.fromScale(1, 1) })
+	local nameStroke = nameLabel:FindFirstChildOfClass("UIStroke")
+	if nameStroke then
+		nameStroke.Thickness = 3
+	end
+	head.Parent = anchor
 
 	-- Pads (4 per side wall, per floor) + Collect buttons -------------------------------------------------------
 	local pads = folder(base, "Pads")
@@ -357,6 +408,11 @@ function BaseBuilder.Build(parent: Instance, info: BuildInfo): Model
 		local x, y0, d, side = Layout.PadLocal(slot, info.slots)
 		local pad = P(pads, { Name = "Pad" .. slot, Size = Vector3.new(8, 0.6, 8), CFrame = L(x, y0 + Layout.PAD_TOP - 0.3, d), Color = theme.pad, Material = M.SmoothPlastic })
 		pad:SetAttribute("Slot", slot)
+		-- shown to the owner only while they're holding one of their Tungs (see PromptUI)
+		local place = prompt(pad, "Place Here", "Slot " .. slot, { Action = "Place", Slot = slot, OwnerOnly = true })
+		place.Name = "PlacePrompt"
+		place.MaxActivationDistance = 7
+		CollectionService:AddTag(place, "OwnPrompt")
 		P(pad, { Name = "Glow", Size = Vector3.new(8.8, 0.3, 8.8), CFrame = L(x, y0 + Layout.PAD_TOP - 0.5, d), Color = theme.accent, Material = M.SmoothPlastic, Transparency = 0.1, CanCollide = false })
 		-- faint Tung outline + "+" shown while the pad is empty
 		local ghost = Instance.new("Model")

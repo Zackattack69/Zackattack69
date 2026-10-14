@@ -167,6 +167,9 @@ local function tryBeginSteal(thief: Player, prompt: ProximityPrompt)
 	if carries[thief] then
 		return deny("You're already carrying a Tung!")
 	end
+	if thief:GetAttribute("Holding") then
+		return deny("Put your own Tung down first!")
+	end
 	if os.clock() < (stealCooldown[thief] or 0) then
 		return deny("Catch your breath first (" .. math.ceil((stealCooldown[thief] or 0) - os.clock()) .. "s)")
 	end
@@ -189,6 +192,9 @@ local function tryBeginSteal(thief: Player, prompt: ProximityPrompt)
 	local tungModel = prompt.Parent and prompt.Parent.Parent
 	if not hrp or not tungModel or not tungModel:IsA("Model") or (hrp.Position - tungModel:GetPivot().Position).Magnitude > 14 then
 		return deny("Get closer!")
+	end
+	if not Layout.InBase(i, st.slots, hrp.Position) then
+		return deny("🚪 Go in through the door!") -- no stealing through the walls
 	end
 	local hum = humanoidOf(thief)
 	if not hum or hum.Health <= 0 then

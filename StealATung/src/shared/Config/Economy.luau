@@ -17,9 +17,10 @@ Economy.PADS_PER_ROW = 6
 
 -- Belt
 Economy.BELT_INTERVAL = 3 -- a new Tung every 3 s
-Economy.BELT_TRAVEL = 20 -- each Tung rides the belt for 20 s (slow: ~10 studs/s)
+Economy.BELT_TRAVEL = 20 -- each Tung rides the full-length belt for 20 s (~20 studs/s)
+Economy.SPEED_BELT_MULT = 1.5 -- Speed Belt event: belt speed (it also spawns twice as often)
 Economy.PERSONAL_BELT_INTERVAL = 30 -- Rebirth 6 perk
-Economy.BUY_HOLD = 0.5
+Economy.BUY_HOLD = 0.25 -- short, so you can grab a Tung as it rides past
 
 -- Stealing & defence
 Economy.STEAL_HOLD = 1.5

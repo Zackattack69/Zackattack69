@@ -9,10 +9,12 @@
 --   [base4]   |hole|   [base8]
 --             Z = +228 wall
 --
--- A base is a building with up to 4 floors. Each floor holds 8 Tungs: 4 along
--- the left wall and 4 along the right wall, facing the middle aisle. Stairs run
--- along the front wall (alternating sides per floor). The Rebirth Altar stands
--- at the back in the middle of the ground floor.
+-- A base is a closed box building (walls, windows and a roof) with up to 4
+-- floors; the laser door at the front is the only way in or out. Each floor
+-- holds 8 Tungs: 4 along the left wall and 4 along the right wall, facing the
+-- middle aisle. Stairs run along the inside of the front wall (alternating
+-- sides per floor). The Rebirth Altar stands at the back in the middle of the
+-- ground floor.
 
 local Layout = {}
 
@@ -27,7 +29,10 @@ Layout.BASE_COUNT = 8
 -- Base building
 Layout.BASE_WIDTH = 48 -- across (local X: -24 .. 24)
 Layout.BASE_DEPTH = 64 -- from the gate to the back wall
-Layout.FLOOR_HEIGHT = 14
+Layout.FLOOR_HEIGHT = 16
+Layout.WALL_THICKNESS = 1
+Layout.WINDOW_BOTTOM = 4.5 -- window band on every floor, above that floor's base height
+Layout.WINDOW_TOP = 11.5
 Layout.SLOTS_PER_FLOOR = 8
 Layout.MAX_FLOORS = 4
 Layout.GATE_WIDTH = 16
@@ -36,7 +41,7 @@ Layout.PAD_X = 18 -- pads along the side walls
 Layout.BUTTON_X = 11.5 -- collect buttons in front of them, towards the aisle
 Layout.ROW_FIRST = 14 -- depth of the first pad row
 Layout.ROW_SPACING = 11
-Layout.STAIR_INNER = 8 -- stairs run along the front wall from |x| = 22 (bottom) to 8 (top)
+Layout.STAIR_INNER = 9 -- stairs (16 steps) run along the front wall from |x| = 22 (bottom) to 9 (top), clear of the door
 Layout.STAIR_OUTER = 22
 Layout.STAIR_FRONT = 1.5 -- stairs occupy depth 1.5 .. 6.5
 Layout.STAIR_BACK = 6.5
@@ -48,10 +53,12 @@ Layout.PAD_TOP = 1.0 -- where placed Tungs stand
 -- Conveyor belt: each Tung rides it for 20 s (Economy.BELT_TRAVEL)
 Layout.BELT_Y = 2.2 -- belt surface (Tung feet)
 Layout.BELT_WIDTH = 8
-Layout.BELT_START = Vector3.new(0, Layout.BELT_Y, -100)
-Layout.BELT_END = Vector3.new(0, Layout.BELT_Y, 100)
-Layout.DRUM_POS = Vector3.new(0, 8, -110)
-Layout.HOLE_POS = Vector3.new(0, 0, 106)
+-- It runs the whole length of the arena: out of the drum by one wall, into the
+-- hole by the other.
+Layout.BELT_START = Vector3.new(0, Layout.BELT_Y, -204)
+Layout.BELT_END = Vector3.new(0, Layout.BELT_Y, 204)
+Layout.DRUM_POS = Vector3.new(0, 8, -214)
+Layout.HOLE_POS = Vector3.new(0, 0, 210)
 
 Layout.PILLAR_POS = Vector3.new(0, 0, 0)
 Layout.SHOP_POS = Vector3.new(26, 0, 0)
@@ -80,7 +87,7 @@ function Layout.Depth(_slots: number): number
 	return Layout.BASE_DEPTH
 end
 
--- Height of the building (top of the highest floor's railing area).
+-- Height of the building up to the underside of the roof.
 function Layout.Height(slots: number): number
 	return Layout.Floors(slots) * Layout.FLOOR_HEIGHT
 end
@@ -133,11 +140,11 @@ function Layout.PersonalBelt(i: number, _slots: number): (Vector3, Vector3)
 	return a, b
 end
 
--- Is a world position inside base i (any floor)?
+-- Is a world position inside base i (any floor, under the roof)?
 function Layout.InBase(i: number, slots: number, pos: Vector3): boolean
 	local p = Layout.BaseCFrame(i):PointToObjectSpace(pos)
 	local d = -p.Z
-	return math.abs(p.X) <= Layout.BASE_WIDTH / 2 + 0.5 and d >= -0.5 and d <= Layout.BASE_DEPTH + 0.5 and p.Y < Layout.Height(slots) + 8
+	return math.abs(p.X) <= Layout.BASE_WIDTH / 2 + 0.5 and d >= -0.5 and d <= Layout.BASE_DEPTH + 0.5 and p.Y > -4 and p.Y < Layout.Height(slots)
 end
 
 -- A random point in the open corridor (where Tung Rain lands).

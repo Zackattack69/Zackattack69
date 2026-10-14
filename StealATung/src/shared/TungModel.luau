@@ -557,7 +557,10 @@ function TungModel.MutationStyle(key: string): (ColorSequence, string?)
 	return cs(Color3.new(1, 1, 1), Color3.new(1, 1, 1)), nil
 end
 
--- Floating nameplate. "belt": name, rarity, price, $/s. "pad": name + rarity + $/s.
+-- Floating nameplate, small and easy to read: solid colours, thin outlines and
+-- only Secret / Rainbow keep their rainbow shimmer.
+--   "belt": [mutation] / name / rarity / price / $/s
+--   "pad":  [mutation] / name / $/s
 function TungModel.Nameplate(model: Model, id: string, mut: string?, mode: string): BillboardGui?
 	local t = Tungs.Get(id)
 	local root = model.PrimaryPart
@@ -570,49 +573,49 @@ function TungModel.Nameplate(model: Model, id: string, mut: string?, mode: strin
 
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "Nameplate"
-	bb.Size = if belt then UDim2.fromOffset(250, 118) else UDim2.fromOffset(210, 66)
-	bb.StudsOffset = Vector3.new(0, h + (if belt then 2.8 else 1.8), 0)
+	bb.Size = if belt then UDim2.fromOffset(190, 100) else UDim2.fromOffset(170, 52)
+	bb.StudsOffset = Vector3.new(0, h + (if belt then 2.4 else 1.2), 0)
 	bb.LightInfluence = 0
-	bb.MaxDistance = if belt then 150 else 75
+	bb.MaxDistance = if belt then 110 else 60
 	bb.ResetOnSpawn = false
 
 	local list = Instance.new("UIListLayout")
 	list.SortOrder = Enum.SortOrder.LayoutOrder
 	list.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	list.VerticalAlignment = Enum.VerticalAlignment.Bottom
-	list.Padding = UDim.new(0, -2)
+	list.Padding = UDim.new(0, 0)
 	list.Parent = bb
 
-	local function line(order: number, text: string, height: number, seq: ColorSequence, anim: string?, font: Enum.Font?): TextLabel
+	local function line(order: number, text: string, height: number, color: Color3, rainbow: boolean?): TextLabel
 		local l = Instance.new("TextLabel")
 		l.Size = UDim2.new(1, 0, 0, height)
 		l.BackgroundTransparency = 1
 		l.Text = text
 		l.TextScaled = true
-		l.Font = font or Enum.Font.FredokaOne
-		l.TextColor3 = Color3.new(1, 1, 1)
+		l.Font = Enum.Font.FredokaOne
+		l.TextColor3 = if rainbow then Color3.new(1, 1, 1) else color
 		l.LayoutOrder = order
 		local s = Instance.new("UIStroke")
-		s.Thickness = 3
+		s.Thickness = 2
 		s.Color = Color3.fromRGB(20, 16, 34)
 		s.Parent = l
-		gradient(l, seq, anim)
+		if rainbow then
+			gradient(l, Rarities.RAINBOW, "Rainbow")
+		end
 		l.Parent = bb
 		return l
 	end
 
 	if mutation then
-		local seq, anim = TungModel.MutationStyle(mutation.key)
-		line(1, mutation.icon .. " " .. string.upper(mutation.name), 20, seq, anim)
+		line(1, string.upper(mutation.name), 14, mutation.color:Lerp(Color3.new(1, 1, 1), 0.2), mutation.key == "Rainbow")
 	end
-	line(2, t.name, if belt then 26 else 22, cs(Color3.new(1, 1, 1), Color3.fromRGB(225, 230, 255)), nil, Enum.Font.FredokaOne)
-	local rseq, ranim = TungModel.RarityStyle(t)
-	line(3, Tungs.RarityLabel(t), if belt then 24 else 18, rseq, ranim, Enum.Font.LuckiestGuy)
+	line(2, t.name, if belt then 18 else 16, Color3.new(1, 1, 1))
 	if belt then
-		local price = t.price * Mutations.Mult(mut)
-		line(4, Format.Money(price), 26, cs(Color3.fromRGB(190, 255, 140), Color3.fromRGB(60, 220, 70)), nil, Enum.Font.LuckiestGuy)
+		local secret = t.rarity == "Secret"
+		line(3, Tungs.RarityLabel(t), 15, Tungs.Color(t):Lerp(Color3.new(1, 1, 1), 0.15), secret)
+		line(4, Format.Money(t.price * Mutations.Mult(mut)), 17, Color3.fromRGB(110, 240, 110))
 	end
-	line(5, Format.Money(t.income * Mutations.Mult(mut)) .. "/s", if belt then 20 else 17, cs(Color3.fromRGB(255, 250, 170), Color3.fromRGB(255, 200, 40)))
+	line(5, Format.Money(t.income * Mutations.Mult(mut)) .. "/s", 14, Color3.fromRGB(255, 220, 90))
 
 	bb.Parent = root
 	return bb

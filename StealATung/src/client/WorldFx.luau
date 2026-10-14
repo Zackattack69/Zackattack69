@@ -232,11 +232,7 @@ local function onBatHit(a: Anim, pivot: CFrame)
 			e:Emit(10)
 		end
 	elseif a.effect == "Quake" then
-		local d = (camPos() - feet).Magnitude
-		if d < 70 then
-			WorldFx.Shake(math.clamp(1.2 - d / 70, 0.15, 1.2), 0.35)
-			Lib.sound3D("Bonk", feet, 0.9, 0.45)
-		end
+		-- just the shock ring: no boom or camera shake every swing
 		ring(feet + Vector3.new(0, 0.1, 0), Color3.fromRGB(255, 80, 20), 3, 16, 0.6)
 	end
 end
@@ -462,9 +458,6 @@ local function animate(a: Anim, t: number, dt: number)
 		a.extra.laugh = ((a.extra.laugh :: number?) or (8 + a.phase)) - dt
 		if (a.extra.laugh :: number) <= 0 then
 			a.extra.laugh = 10 + math.random() * 8
-			if near(pivot.Position, 18) then
-				Lib.sound3D("Laugh", pivot.Position, 0.25)
-			end
 		end
 	end
 end
@@ -500,6 +493,11 @@ local function refreshCarrier(p: Player)
 	local carrier = c :: Carrier
 	local following = (p:GetAttribute("Following") :: string?) or ""
 	local carrying = (p:GetAttribute("Carrying") :: string?) or ""
+	-- a Tung picked up in your own base walks right behind you too
+	local held = (p:GetAttribute("Holding") :: string?) or ""
+	if held ~= "" then
+		following = if following == "" then held else held .. "," .. following
+	end
 	if following ~= carrier.following then
 		carrier.following = following
 		for _, m in carrier.followers do
@@ -705,12 +703,6 @@ local function shakeDrum()
 		end
 		drum:PivotTo(base)
 	end)
-	task.spawn(function()
-		for _ = 1, 10 do
-			Lib.sound3D("Drumroll", Layout.DRUM_POS, 0.6, 0.9 + math.random() * 0.3)
-			task.wait(0.09)
-		end
-	end)
 end
 
 local function spotlight(entryId: number, color: Color3, seconds: number)
@@ -762,8 +754,7 @@ local function onHype(h: any)
 		spotlight(h.entry, if h.level == "Secret" then Color3.fromRGB(255, 255, 255) else color, 30)
 	end
 	if h.level == "Mythic" then
-		Music.Cut(9)
-		Music.Chant(3)
+		Music.Cut(6)
 		task.delay(1, function()
 			darkenSky(6, color, -0.1)
 			WorldFx.Shake(0.4, 1.5)
@@ -875,6 +866,13 @@ local function hookOwnLasers(base: Instance)
 	local function check()
 		if base:GetAttribute("OwnerId") ~= player.UserId then
 			return
+		end
+		-- your own name above the roof shows in gold
+		local anchor = base:FindFirstChild("Headline")
+		local gui = anchor and anchor:FindFirstChild("OwnerGui")
+		local name = gui and gui:FindFirstChild("OwnerName") :: TextLabel?
+		if name then
+			name.TextColor3 = Color3.fromRGB(255, 220, 90)
 		end
 		local lasers = base:FindFirstChild("Lasers")
 		local wall = lasers and lasers:FindFirstChild("Wall") :: BasePart?
@@ -1112,7 +1110,7 @@ local function tapTung(screenPos: Vector2)
 		return
 	end
 	local height = (model:GetAttribute("Height") :: number?) or 6.4
-	Lib.sound3D("Tung", hit.Position, 0.8, math.clamp(1.25 * 6.4 / height, 0.5, 2))
+	Lib.sound3D("Tung", hit.Position, 0.4, math.clamp(1.25 * 6.4 / height, 0.5, 2))
 	local body = hit :: BasePart
 	local size = body.Size
 	body.Size = Vector3.new(size.X * 0.88, size.Y * 1.08, size.Z * 1.08)
@@ -1177,6 +1175,9 @@ function WorldFx.Init()
 		p:GetAttributeChangedSignal("Carrying"):Connect(function()
 			refreshCarrier(p)
 		end)
+		p:GetAttributeChangedSignal("Holding"):Connect(function()
+			refreshCarrier(p)
+		end)
 	end
 	for _, p in Players:GetPlayers() do
 		hookPlayer(p)
@@ -1204,13 +1205,11 @@ function WorldFx.Init()
 		end
 		local scale = (t.scale or 1) * Rarities.Get(t.rarity).scale
 		puff(d.pos + Vector3.new(0, 0.5, 0), nil)
-		Lib.sound3D("Place", d.pos, nil, 1.3 / scale)
-		Lib.sound3D("Tung", d.pos, 0.5, 1.2 / scale)
-		if t.effect == "Fanfare" then
-			Lib.sound3D("Fanfare", d.pos, 0.8)
-		end
-		if d.mut == "Cursed" then
-			Lib.sound3D("Laugh", d.pos)
+		if near(d.pos, 40) then
+			Lib.sound3D("Place", d.pos, nil, 1.15 / scale)
+			if t.effect == "Fanfare" then
+				Lib.sound3D("Fanfare", d.pos, 0.5)
+			end
 		end
 		ring(d.pos + Vector3.new(0, 0.1, 0), Tungs.Color(t), 2, 10, 0.5)
 	end)
@@ -1281,12 +1280,7 @@ function WorldFx.Init()
 	end)
 
 	-- Events
-	Workspace:GetAttributeChangedSignal("Event"):Connect(function()
-		eventVisuals()
-		if Workspace:GetAttribute("Event") == "SahurHour" then
-			Music.Chant(4)
-		end
-	end)
+	Workspace:GetAttributeChangedSignal("Event"):Connect(eventVisuals)
 	Workspace:GetAttributeChangedSignal("AdminAbuse"):Connect(eventVisuals)
 	local rainPart = Instance.new("Part")
 	rainPart.Anchored = true

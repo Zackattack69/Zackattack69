@@ -1,8 +1,8 @@
 --!strict
 -- Screen effects:
 --   * candy toasts
---   * big centre banners that slide down from the top and fade after 3 s
---     (rare spawns, steals, events), with spinning light rays and sparkles
+--   * compact banners that slide down from the top and leave after 2.6 s
+--     (rare spawns, steals, events)
 --   * the bouncy gradient "+$12.4K" collect pop
 --   * "STOLEN!" / "PURCHASED!" / "NEW!" pops
 --   * the red siren flash when you're being robbed, and the rebirth flash
@@ -32,18 +32,17 @@ local TOAST_COLORS: { [string]: { Color3 } } = {
 
 -- Big gradient word that pops in, wobbles and floats away.
 local function bigPop(fxGui: ScreenGui, text: string, c1: Color3, c2: Color3, y: number, withRays: boolean?)
-	local holder = Lib.new("Frame", { Size = UDim2.fromOffset(700, 160), Position = UDim2.fromScale(0.5, y), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, ZIndex = 50, Parent = fxGui })
+	local holder = Lib.new("Frame", { Size = UDim2.fromOffset(460, 96), Position = UDim2.fromScale(0.5, y), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, ZIndex = 50, Parent = fxGui })
 	local scale = Lib.new("UIScale", { Scale = 0.2, Parent = holder })
 	if withRays then
-		Lib.rays(holder, c1:Lerp(WHITE, 0.5), 420, 10, 49)
+		Lib.rays(holder, c1:Lerp(WHITE, 0.5), 240, 10, 49)
 	end
 	local l = Lib.label({ Text = text, Font = Lib.FontTitle, Size = UDim2.fromScale(1, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 51, Parent = holder })
 	Lib.gradient(l, c1:Lerp(WHITE, 0.4), c2, 90)
 	local st = l:FindFirstChildOfClass("UIStroke")
 	if st then
-		st.Thickness = 5
+		st.Thickness = 4
 	end
-	Lib.sparkles(holder, 6, Color3.fromRGB(255, 255, 180))
 	Lib.tween(scale, 0.45, { Scale = Lib.HudScale() }, Enum.EasingStyle.Back)
 	task.spawn(function()
 		for _, r in { -6, 6, -4, 4, 0 } do
@@ -64,7 +63,7 @@ end
 
 function Effects.Init(fxGui: ScreenGui)
 	-- Toasts -----------------------------------------------------------------------------------------------
-	local toastHolder = Lib.new("Frame", { Name = "Toasts", Size = UDim2.fromOffset(580, 280), Position = UDim2.new(0.5, 0, 0, 150), AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, Parent = fxGui })
+	local toastHolder = Lib.new("Frame", { Name = "Toasts", Size = UDim2.fromOffset(500, 220), Position = UDim2.new(0.5, 0, 0, 168), AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, Parent = fxGui })
 	Lib.hudFit(toastHolder)
 	Lib.list(toastHolder, 6, false, Enum.HorizontalAlignment.Center).VerticalAlignment = Enum.VerticalAlignment.Top
 	local order = 0
@@ -79,7 +78,7 @@ function Effects.Init(fxGui: ScreenGui)
 			Lib.sound("Jackpot")
 		end
 		local colors = TOAST_COLORS[k] or TOAST_COLORS.info
-		local f, l = Lib.chip({ Text = text, Size = UDim2.fromOffset(560, 46), LayoutOrder = order, Parent = toastHolder }, colors[1], colors[2])
+		local f, l = Lib.chip({ Text = text, Size = UDim2.fromOffset(480, 38), LayoutOrder = order, Parent = toastHolder }, colors[1], colors[2])
 		local s = Lib.new("UIScale", { Scale = 0.3, Parent = f })
 		Lib.tween(s, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
 		task.delay(3, function()
@@ -94,7 +93,7 @@ function Effects.Init(fxGui: ScreenGui)
 				table.insert(kids, c)
 			end
 		end
-		if #kids > 4 then
+		if #kids > 3 then
 			table.sort(kids, function(a, b)
 				return a.LayoutOrder < b.LayoutOrder
 			end)
@@ -105,18 +104,17 @@ function Effects.Init(fxGui: ScreenGui)
 	-- Centre banners ------------------------------------------------------------------------------------------------
 	local queue: { any } = {}
 	local showing = false
-	local bannerRoot = Lib.new("Frame", { Name = "BannerRoot", Size = UDim2.fromOffset(860, 110), Position = UDim2.new(0.5, 0, 0, -170), AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, ZIndex = 70, Parent = fxGui })
+	local HIDDEN = UDim2.new(0.5, 0, 0, -90)
+	local SHOWN = UDim2.new(0.5, 0, 0, 104)
+	local bannerRoot = Lib.new("Frame", { Name = "BannerRoot", Size = UDim2.fromOffset(540, 58), Position = HIDDEN, AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, ZIndex = 70, Parent = fxGui })
 	Lib.hudFit(bannerRoot)
-	local rays = Lib.rays(bannerRoot, Color3.fromRGB(255, 250, 200), 520, 12, 69)
 	local banner = Lib.new("Frame", { Name = "Banner", Size = UDim2.fromScale(1, 1), BackgroundColor3 = WHITE, ZIndex = 70, Parent = bannerRoot })
-	Lib.corner(banner, 30)
+	Lib.corner(banner, 20)
 	local bannerGrad = Lib.new("UIGradient", { Color = Lib.buttonSeq(C.Gold, C.Gold2), Rotation = 90, Parent = banner })
-	Lib.stroke(banner, C.Outline, 5)
-	Lib.stripes(banner, 0.85)
-	Lib.sparkles(banner, 6)
-	local bannerShine = Lib.shine(banner, 30)
+	Lib.stroke(banner, C.Outline, 3.5)
+	local bannerShine = Lib.shine(banner, 20)
 	local _ = bannerShine
-	local bannerText = Lib.title({ Text = "", Size = UDim2.new(1, -50, 1, -24), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 74, Parent = banner })
+	local bannerText = Lib.title({ Text = "", Size = UDim2.new(1, -32, 1, -16), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 74, Parent = banner })
 	local rainbowStroke = Lib.animGradient(Lib.new("UIStroke", { Thickness = 0, Color = WHITE, Parent = Lib.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 75, Parent = banner }) }), Rarities.RAINBOW, "Rainbow")
 	local rainbowStrokeInst = rainbowStroke.Parent :: UIStroke
 
@@ -128,19 +126,18 @@ function Effects.Init(fxGui: ScreenGui)
 		local b = table.remove(queue, 1)
 		local color: Color3 = b.color or C.Gold
 		bannerGrad.Color = Lib.buttonSeq(color:Lerp(WHITE, 0.1), color:Lerp(Color3.new(0, 0, 0), 0.3))
-		rainbowStrokeInst.Thickness = if b.rainbow then 8 else 0
-		rays.Visible = b.rays ~= false
+		rainbowStrokeInst.Thickness = if b.rainbow then 4 else 0
 		bannerText.Text = b.text
-		bannerRoot.Position = UDim2.new(0.5, 0, 0, -170)
+		bannerRoot.Position = HIDDEN
 		local sc = banner:FindFirstChild("Pop") :: UIScale? or Lib.new("UIScale", { Name = "Pop", Parent = banner })
-		;(sc :: UIScale).Scale = 0.8
-		Lib.tween(bannerRoot, 0.45, { Position = UDim2.new(0.5, 0, 0, 100) }, Enum.EasingStyle.Back)
-		Lib.tween(sc :: UIScale, 0.5, { Scale = 1 }, Enum.EasingStyle.Elastic)
+		;(sc :: UIScale).Scale = 0.85
+		Lib.tween(bannerRoot, 0.4, { Position = SHOWN }, Enum.EasingStyle.Back)
+		Lib.tween(sc :: UIScale, 0.45, { Scale = 1 }, Enum.EasingStyle.Back)
 		if b.sound then
 			Lib.sound(b.sound)
 		end
-		task.delay(3, function()
-			Lib.tween(bannerRoot, 0.35, { Position = UDim2.new(0.5, 0, 0, -170) }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+		task.delay(2.6, function()
+			Lib.tween(bannerRoot, 0.3, { Position = HIDDEN }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
 			task.wait(0.4)
 			showing = false
 			nextBanner()
@@ -159,7 +156,7 @@ function Effects.Init(fxGui: ScreenGui)
 	local vStroke = Lib.new("UIStroke", { Color = C.Red2, Thickness = 0, Transparency = 0.15, Parent = vignette })
 	local function siren()
 		task.spawn(function()
-			for _ = 1, 4 do
+			for _ = 1, 3 do
 				Lib.sound("Siren", nil, 0.75)
 				Lib.tween(vStroke, 0.2, { Thickness = 30 })
 				task.wait(0.3)
@@ -179,35 +176,29 @@ function Effects.Init(fxGui: ScreenGui)
 
 	State.On("Hype", function(level: string, name: string, color: Color3)
 		local text = if level == "Mythic"
-			then "🔥 A MYTHIC TUNG IS ON THE BELT! 🔥"
-			elseif level == "Secret" then "🌑 A SECRET TUNG IS ON THE BELT! 🌑"
-			else "✨ A LEGENDARY TUNG IS ON THE BELT! ✨"
+			then "🔥 MYTHIC on the belt: " .. name
+			elseif level == "Secret" then "🌑 SECRET on the belt: " .. name
+			else "✨ LEGENDARY on the belt: " .. name
 		pushBanner({ text = text, color = if level == "Secret" then Color3.fromRGB(60, 50, 90) else color, sound = "Spawn" .. level, rainbow = level == "Secret" or level == "Mythic" })
-		local _ = name
 	end)
 
 	State.On("Purchased", function(name: string)
-		bigPop(fxGui, "PURCHASED!", C.Money, C.Money2, 0.62, false)
+		bigPop(fxGui, "PURCHASED!", C.Money, C.Money2, 0.66, false)
 		local _ = name
 	end)
 
 	-- Collect pop: big bouncy "+$X" -------------------------------------------------------------------------------------
 	State.On("CollectPop", function(amount: number)
-		if amount >= 1e5 then
-			Lib.sound("Jackpot")
-		else
-			Lib.sound("ChaChing", nil, 1.3 + math.random() * 0.3)
-		end
-		local holder = Lib.new("Frame", { Size = UDim2.fromOffset(480, 110), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, ZIndex = 50, Parent = fxGui })
+		Lib.sound("ChaChing")
+		local holder = Lib.new("Frame", { Size = UDim2.fromOffset(340, 76), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, ZIndex = 50, Parent = fxGui })
 		local l = Lib.label({ Text = "+" .. Format.Money(amount), Font = Lib.FontTitle, Size = UDim2.fromScale(1, 1), ZIndex = 51, Parent = holder })
 		Lib.gradient(l, Color3.fromRGB(220, 255, 170), Color3.fromRGB(50, 220, 70), 90)
 		local st = l:FindFirstChildOfClass("UIStroke")
 		if st then
 			st.Thickness = 5
 		end
-		Lib.sparkles(holder, 5, Color3.fromRGB(255, 255, 170))
 		local s = Lib.new("UIScale", { Scale = 0.3, Parent = holder })
-		Lib.tween(s, 0.35, { Scale = Lib.HudScale() * 1.1 }, Enum.EasingStyle.Back)
+		Lib.tween(s, 0.35, { Scale = Lib.HudScale() }, Enum.EasingStyle.Back)
 		task.delay(0.6, function()
 			Lib.tween(holder, 0.6, { Position = UDim2.fromScale(0.5, 0.3) })
 			Lib.tween(l, 0.6, { TextTransparency = 1 })

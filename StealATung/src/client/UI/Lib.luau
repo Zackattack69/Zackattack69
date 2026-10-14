@@ -7,6 +7,7 @@
 -- in from the side in 0.25 s, numbers count up, taps pop, menus whoosh.
 
 local CollectionService = game:GetService("CollectionService")
+local ContentProvider = game:GetService("ContentProvider")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
@@ -275,6 +276,20 @@ local function template(name: string): Sound?
 		created.PlaybackSpeed = cue.pitch or 1
 		soundTemplates[name] = created
 		s = created
+		local fallback = cue.fallback
+		if fallback then
+			-- uploaded sounds can be taken down; swap to the built-in fallback if it won't load
+			task.spawn(function()
+				pcall(function()
+					ContentProvider:PreloadAsync({ created }, function(_: string, status: Enum.AssetFetchStatus)
+						if status ~= Enum.AssetFetchStatus.Success then
+							created.SoundId = fallback
+							created.PlaybackSpeed = cue.fallbackPitch or 1
+						end
+					end)
+				end)
+			end)
+		end
 	end
 	return s
 end
@@ -340,11 +355,14 @@ end
 type ScaleEntry = { scale: UIScale, fn: () -> number }
 local scales: { ScaleEntry } = {}
 
--- HUD scale: phones stay big enough that 80 px design buttons are >= 60 px.
+-- Overall UI size: everything is drawn a bit smaller than the design sizes.
+Lib.UI_SCALE = 0.86
+
+-- HUD scale: phones stay big enough that 80 px design buttons are >= 52 px.
 function Lib.HudScale(): number
 	local vp = viewport()
 	local s = math.min(vp.X / 1100, vp.Y / 620)
-	return math.clamp(s, if Lib.Touch then 0.75 else 0.62, 1.2)
+	return math.clamp(s, if Lib.Touch then 0.75 else 0.62, 1.2) * Lib.UI_SCALE
 end
 
 local function addScale(parent: GuiObject, fn: () -> number): UIScale
@@ -360,7 +378,10 @@ end
 function Lib.windowFit(parent: GuiObject, design: Vector2): UIScale
 	return addScale(parent, function()
 		local vp = viewport()
-		return math.clamp(math.min((vp.X - 40) / design.X, (vp.Y - 40) / design.Y), 0.45, 1.15)
+		local fit = math.min((vp.X - 40) / design.X, (vp.Y - 40) / design.Y)
+		-- a little smaller on roomy screens; on small screens just fit
+		local k = math.clamp((fit - 0.6) / 0.3, 0, 1)
+		return math.clamp(math.min(fit, 1.15) * (1 + (Lib.UI_SCALE - 1) * k), 0.45, 1.15)
 	end)
 end
 

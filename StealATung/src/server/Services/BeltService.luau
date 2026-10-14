@@ -105,7 +105,7 @@ export type SpawnOpts = { owner: number?, free: boolean?, a: Vector3?, b: Vector
 function BeltService.Spawn(id: string, mut: string, opts: SpawnOpts?): Entry
 	local o: SpawnOpts = opts or {}
 	nextId += 1
-	local speedMult = if eventIs("SpeedBelt") and o.belt == nil then 2 else 1
+	local speedMult = if eventIs("SpeedBelt") and o.belt == nil then Economy.SPEED_BELT_MULT else 1
 	local e: Entry = {
 		id = nextId,
 		tung = id,
@@ -155,7 +155,8 @@ function BeltService.Buy(player: Player, entryId: number): (boolean, any)
 	end
 	local character = player.Character
 	local hrp = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if not hrp or (hrp.Position - positionOf(e)).Magnitude > 20 then
+	-- generous range: the Tung keeps moving while the request travels to the server
+	if not hrp or (hrp.Position - positionOf(e)).Magnitude > 32 then
 		return false, "Get closer to the Tung"
 	end
 	if BaseService.FreeSlotCount(player) <= 0 then

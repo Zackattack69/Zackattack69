@@ -24,9 +24,22 @@ return {
 		TungMaster = 0,
 	} :: { [string]: number },
 
-	-- Upload a looping main theme and paste "rbxassetid://..." here.
+	-- Main theme, loops forever. Roblox can only play audio that's been uploaded:
+	-- in Studio open Window > Asset Manager > Import, pick Bills_Keep_Rolling.mp3,
+	-- then right-click it > Copy Asset ID and paste it here as "rbxassetid://123...".
 	-- Empty = no background music.
 	MusicId = "",
+
+	-- Optional songs for events (same "rbxassetid://..." format). Leave one empty
+	-- and the main theme is re-mixed to fit that event instead (see client/Music.luau).
+	EventMusic = {
+		SahurHour = "",
+		TungRain = "",
+		GoldenBelt = "",
+		SpeedBelt = "",
+		ThiefNight = "",
+		AdminAbuse = "",
+	} :: { [string]: string },
 
 	-- Trading is friends-only, as in the design doc (ignored in Studio so you can test).
 	TradeFriendsOnly = true,

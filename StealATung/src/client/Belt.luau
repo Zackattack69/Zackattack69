@@ -92,7 +92,7 @@ local function add(e: any)
 		if plate then
 			local owner = Players:GetPlayerByUserId(e.owner)
 			local tag = Instance.new("TextLabel")
-			tag.Size = UDim2.new(1, 0, 0, 20)
+			tag.Size = UDim2.new(1, 0, 0, 16)
 			tag.BackgroundTransparency = 1
 			tag.TextScaled = true
 			tag.Font = Enum.Font.FredokaOne
@@ -110,7 +110,7 @@ local function add(e: any)
 		pr.Name = "BuyPrompt"
 		pr.ObjectText = Mutations.Prefix(e.mut) .. t.name
 		pr.HoldDuration = Economy.BUY_HOLD
-		pr.MaxActivationDistance = 11
+		pr.MaxActivationDistance = 14
 		pr.RequiresLineOfSight = false
 		pr.Style = Enum.ProximityPromptStyle.Custom
 		pr:SetAttribute("EntryId", e.id)
@@ -128,10 +128,7 @@ local function add(e: any)
 	end
 	items[e.id] = it
 	model.Parent = folder
-	-- spawn sound: a single knock for Common up to a full drumroll for Mythic
-	if e.belt == "main" and t.rarity ~= "Common" and t.rarity ~= "Uncommon" then
-		Lib.sound3D("Spawn" .. t.rarity, Layout.DRUM_POS, nil, nil)
-	end
+	-- no spawn sounds: Legendary and rarer get a banner + soft fanfare (WorldFx / Effects)
 end
 
 local function remove(id: number, buyer: number?)
@@ -177,7 +174,7 @@ local function slats()
 	local offset = 0
 	RunService.RenderStepped:Connect(function(dt: number)
 		local fast = Workspace:GetAttribute("Event") == "SpeedBelt"
-		offset = (offset + dt * speed * (if fast then 2 else 1)) % spacing
+		offset = (offset + dt * speed * (if fast then Economy.SPEED_BELT_MULT else 1)) % spacing
 		local start = a - dir * 2
 		for k = 1, count do
 			local pos = start + dir * ((k - 1) * spacing + offset) + Vector3.new(0, 0.03, 0)
