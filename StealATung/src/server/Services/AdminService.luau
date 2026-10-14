@@ -1,0 +1,177 @@
+--!strict
+-- Admin chat commands, used for weekly Admin Abuse streams and for testing.
+--   /spawn <tung> [mutation]     put a Tung on the belt (any rarity, even Mythics)
+--   /give <tung> [mutation]      put a Tung straight into your base
+--   /event <name|stop>           SahurHour, TungRain, GoldenBelt, SpeedBelt, ThiefNight
+--   /adminabuse [minutes|stop]   start or stop Admin Abuse (luck x3, Golden Belt)
+--   /luck <mult> [minutes]       server luck multiplier
+--   /money <amount>              give yourself money
+-- Admins: GameConfig.Admins, the place owner (or group owner), everyone in Studio.
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TextChatService = game:GetService("TextChatService")
+
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local Events = require(Shared.Config.Events)
+local GameConfig = require(Shared.Config.GameConfig)
+local Mutations = require(Shared.Config.Mutations)
+local Tungs = require(Shared.Config.Tungs)
+local Format = require(Shared.Util.Format)
+
+local BaseService = require(script.Parent.BaseService)
+local BeltService = require(script.Parent.BeltService)
+local EconomyService = require(script.Parent.EconomyService)
+local EventService = require(script.Parent.EventService)
+
+local AdminService = {}
+
+function AdminService.IsAdmin(player: Player): boolean
+	if RunService:IsStudio() then
+		return true
+	end
+	if table.find(GameConfig.Admins, player.UserId) then
+		return true
+	end
+	if game.CreatorType == Enum.CreatorType.User then
+		return player.UserId == game.CreatorId
+	end
+	local ok, rank = pcall(function()
+		return (player :: any):GetRankInGroupAsync(game.CreatorId)
+	end)
+	if not ok then
+		ok, rank = pcall(function()
+			return (player :: any):GetRankInGroup(game.CreatorId)
+		end)
+	end
+	return ok and rank == 255
+end
+
+local function parseMutation(word: string?): string
+	if not word then
+		return Mutations.NONE
+	end
+	local w = string.lower(word)
+	for _, m in Mutations.List do
+		if string.lower(m.key) == w then
+			return m.key
+		end
+	end
+	return Mutations.NONE
+end
+
+-- Splits "/spawn mythic red tung gold" into the Tung query + optional mutation.
+local function tungAndMutation(args: { string }): (Tungs.Tung?, string)
+	local mut = Mutations.NONE
+	local last = args[#args]
+	if last and parseMutation(last) ~= Mutations.NONE then
+		mut = parseMutation(last)
+		table.remove(args, #args)
+	end
+	return Tungs.Find(table.concat(args, " ")), mut
+end
+
+local function run(player: Player, msg: string)
+	if string.sub(msg, 1, 1) ~= "/" then
+		return
+	end
+	local args = string.split(string.sub(msg, 2), " ")
+	local cmd = string.lower(table.remove(args, 1) or "")
+	local function reply(text: string)
+		EconomyService.Notify(player, "[Admin] " .. text, "info")
+	end
+	if cmd == "spawn" or cmd == "give" then
+		local t, mut = tungAndMutation(args)
+		if not t then
+			return reply("No Tung called '" .. table.concat(args, " ") .. "'")
+		end
+		if cmd == "spawn" then
+			BeltService.AdminSpawn(t.id, mut)
+			reply("Spawned " .. Mutations.Prefix(mut) .. t.name .. " on the belt")
+		else
+			BaseService.AddTung(player, t.id, mut, { source = "admin" })
+			reply("Gave you " .. Mutations.Prefix(mut) .. t.name)
+		end
+	elseif cmd == "event" then
+		local name = string.lower(args[1] or "")
+		if name == "stop" then
+			EventService.Stop()
+			return reply("Event stopped")
+		end
+		for _, e in Events.List do
+			if string.lower(e.key) == name and e.random then
+				EventService.Start(e.key)
+				return reply("Started " .. e.name)
+			end
+		end
+		reply("Events: SahurHour, TungRain, GoldenBelt, SpeedBelt, ThiefNight, stop")
+	elseif cmd == "adminabuse" then
+		if string.lower(args[1] or "") == "stop" then
+			EventService.StopAdminAbuse()
+		else
+			EventService.Start("AdminAbuse", (tonumber(args[1]) or 30) * 60)
+		end
+	elseif cmd == "luck" then
+		local mult = tonumber(args[1]) or 2
+		local minutes = tonumber(args[2]) or 10
+		EventService.AdminLuck(mult, minutes)
+		EconomyService.Alert(nil, "🍀 An admin set server luck to x" .. mult .. " for " .. minutes .. " minutes!", Color3.fromRGB(90, 230, 120), "Jackpot", "luck")
+	elseif cmd == "money" then
+		local amount = tonumber(args[1]) or 0
+		EconomyService.AddMoney(player, amount)
+		reply("+" .. Format.Money(amount))
+	elseif cmd == "help" then
+		reply("/spawn <tung> [mutation], /give <tung> [mutation], /event <name|stop>, /adminabuse [min|stop], /luck <x> [min], /money <n>")
+	end
+end
+
+local lastRun: { [Player]: { msg: string, t: number } } = {}
+
+local function handle(player: Player, msg: string)
+	if not AdminService.IsAdmin(player) then
+		return
+	end
+	-- the same message can arrive through both TextChatCommand and Player.Chatted
+	local last = lastRun[player]
+	if last and last.msg == msg and os.clock() - last.t < 1 then
+		return
+	end
+	lastRun[player] = { msg = msg, t = os.clock() }
+	local ok, err = pcall(run :: any, player, msg)
+	if not ok then
+		warn("[AdminService]", err)
+	end
+end
+
+function AdminService.Init()
+	-- Register the commands with TextChatService so "/spawn ..." isn't rejected as unknown.
+	local folder = Instance.new("Folder")
+	folder.Name = "StealATungCommands"
+	folder.Parent = TextChatService
+	for _, name in { "spawn", "give", "event", "adminabuse", "luck", "money", "help" } do
+		local c = Instance.new("TextChatCommand")
+		c.Name = "Admin_" .. name
+		c.PrimaryAlias = "/" .. name
+		c.Parent = folder
+		c.Triggered:Connect(function(source: TextSource, text: string)
+			local player = Players:GetPlayerByUserId(source.UserId)
+			if player then
+				handle(player, text)
+			end
+		end)
+	end
+	local function hook(player: Player)
+		player.Chatted:Connect(function(msg)
+			handle(player, msg)
+		end)
+	end
+	Players.PlayerAdded:Connect(hook)
+	for _, p in Players:GetPlayers() do
+		hook(p)
+	end
+	Players.PlayerRemoving:Connect(function(player)
+		lastRun[player] = nil
+	end)
+end
+
+return AdminService
