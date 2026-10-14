@@ -1,7 +1,8 @@
 --!strict
 -- Main screen, in candy simulator style:
 --   top centre   big green money counter (counts up, shakes + glows + sparkles
---                when it rises) with income/s, and event / luck / boost chips
+--                when it rises) with income/s, up in the Roblox top-bar row
+--   right edge   event / luck / boost chips, stacked in the empty middle
 --   top right    rebirth badge + multiplier, next-goal chip, shield, friend boost
 --   left         chunky square buttons: Index, Shop, Rebirth, Quests, Trade, Settings
 --   bottom right Lock Base with a circular cooldown, Collect All, Bonk (touch)
@@ -34,7 +35,16 @@ end
 
 function HUD.Build(gui: ScreenGui, panels: any)
 	-- Money (top centre) -----------------------------------------------------------------------------------
-	local top = Lib.new("Frame", { Name = "Top", Size = UDim2.fromOffset(420, 230), Position = UDim2.new(0.5, 0, 0, 6), AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, Parent = gui })
+	-- the money sits in its own ScreenGui that ignores the top-bar inset, so it can go right up to the top
+	local topGui = Instance.new("ScreenGui")
+	topGui.Name = "TungTop"
+	topGui.ResetOnSpawn = false
+	topGui.IgnoreGuiInset = true
+	topGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	topGui.DisplayOrder = gui.DisplayOrder
+	topGui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+	topGui.Parent = gui.Parent
+	local top = Lib.new("Frame", { Name = "Top", Size = UDim2.fromOffset(420, 96), Position = UDim2.new(0.5, 0, 0, 2), AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, Parent = topGui })
 	Lib.hudFit(top)
 	local moneyPill = Lib.new("Frame", { Name = "Money", Size = UDim2.fromOffset(340, 84), Position = UDim2.new(0.5, 22, 0, 4), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = Color3.fromRGB(22, 18, 48), BackgroundTransparency = 0.25, Parent = top })
 	Lib.round(moneyPill)
@@ -62,8 +72,10 @@ function HUD.Build(gui: ScreenGui, panels: any)
 	end)
 	local _ = moneyStroke
 
-	local pills = Lib.new("Frame", { Name = "Pills", Size = UDim2.fromOffset(420, 130), Position = UDim2.fromOffset(0, 96), BackgroundTransparency = 1, Parent = top })
-	Lib.list(pills, 6, false, Enum.HorizontalAlignment.Center).VerticalAlignment = Enum.VerticalAlignment.Top
+	-- events, luck and boosts: stacked against the right edge, in the empty middle of the screen
+	local pills = Lib.new("Frame", { Name = "Pills", Size = UDim2.fromOffset(300, 130), Position = UDim2.new(1, -10, 0.42, 0), AnchorPoint = Vector2.new(1, 0.5), BackgroundTransparency = 1, Parent = gui })
+	Lib.hudFit(pills)
+	Lib.list(pills, 6, false, Enum.HorizontalAlignment.Right).VerticalAlignment = Enum.VerticalAlignment.Center
 	local eventChip, eventText = chip(pills, 1, 300, 36, C.Purple, C.Purple2)
 	local luckChip, luckText = chip(pills, 2, 300, 34, C.Green, C.Green2)
 	local boostChip, boostText = chip(pills, 3, 300, 34, C.Orange, C.Orange2)

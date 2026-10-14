@@ -25,6 +25,7 @@ local QuestsPanel = require(UI.QuestsPanel)
 local TradePanel = require(UI.TradePanel)
 local SellPanel = require(UI.SellPanel)
 local AdminPanel = require(UI.AdminPanel)
+local SkinsPanel = require(UI.SkinsPanel)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -57,6 +58,7 @@ panels.Quests = QuestsPanel.Build()
 panels.Trade = TradePanel.Build(fxGui)
 panels.Sell = SellPanel.Build()
 panels.Admin = AdminPanel.Build()
+panels.Skins = SkinsPanel.Build()
 
 HUD.Build(hudGui, panels)
 Effects.Init(fxGui)

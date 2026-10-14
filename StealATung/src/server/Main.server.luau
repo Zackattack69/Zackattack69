@@ -79,6 +79,9 @@ local handlers: { [string]: Handler } = {
 	ClaimGroup = function(player)
 		return ShopService.ClaimGroup(player)
 	end,
+	SetSkin = function(player, key)
+		return BaseService.SetSkin(player, tostring(key or ""))
+	end,
 	EquipAura = function(player, key)
 		return EconomyService.EquipAura(player, tostring(key or ""))
 	end,
@@ -111,6 +114,9 @@ local handlers: { [string]: Handler } = {
 	end,
 	AdminEvent = function(player, key)
 		return AdminService.StartEvent(player, key)
+	end,
+	AdminMusic = function(player, id)
+		return AdminService.SetMusic(player, id)
 	end,
 	Sync = function(player)
 		DataService.MarkDirty(player, true)

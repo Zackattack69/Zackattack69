@@ -10,9 +10,12 @@
 --
 -- Admins also get an ADMIN button in the HUD. The panel unlocks with the secret
 -- code in AdminConfig (server-only) and can give any amount of money, spawn any
--- Tung (into your base or onto the belt) and start events.
+-- Tung (into your base or onto the belt), start events and set the theme song
+-- (saved in a DataStore, so it survives new versions of the place file).
 
+local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local TextChatService = game:GetService("TextChatService")
 
@@ -219,6 +222,68 @@ function AdminService.StartEvent(player: Player, key: any): (boolean, any)
 	return true, nil
 end
 
+-- Theme song set from the admin panel ---------------------------------------------------------------
+local MUSIC_KEY = "ThemeMusicId"
+local settingsStore: DataStore? = nil
+do
+	local ok, store = pcall(function()
+		return DataStoreService:GetDataStore(GameConfig.DataStoreName .. "_Settings")
+	end)
+	if ok then
+		settingsStore = store
+	end
+end
+
+-- Accepts 123456, "rbxassetid://123456" or a Creator Store / library link; returns "rbxassetid://123456".
+function AdminService.ParseAssetId(text: string): string?
+	local digits = string.match(text, "(%d%d%d%d%d+)")
+	return if digits then "rbxassetid://" .. digits else nil
+end
+
+function AdminService.SetMusic(player: Player, text: any): (boolean, any)
+	local ok, why = allowed(player)
+	if not ok then
+		return false, why
+	end
+	local raw = tostring(text or "")
+	local id = ""
+	if raw ~= "" and string.lower(raw) ~= "off" then
+		id = AdminService.ParseAssetId(raw) or ""
+		if id == "" then
+			return false, "That doesn't look like a sound ID (paste the number from Copy Asset ID)"
+		end
+	end
+	Workspace:SetAttribute("MusicId", id)
+	local store = settingsStore
+	local saved = false
+	if store then
+		saved = pcall(function()
+			store:SetAsync(MUSIC_KEY, id)
+		end)
+	end
+	if id == "" then
+		EconomyService.Notify(player, "🎵 Theme song turned off", "info")
+	elseif saved then
+		EconomyService.Notify(player, "🎵 Theme song set and saved for every server!", "success")
+	else
+		EconomyService.Notify(player, "🎵 Theme song set for this server. (To keep it, publish the place and turn on Studio API access, or paste it in GameConfig.MusicId.)", "info")
+	end
+	return true, id
+end
+
+local function loadMusic()
+	local store = settingsStore
+	if not store then
+		return
+	end
+	local ok, id = pcall(function()
+		return store:GetAsync(MUSIC_KEY)
+	end)
+	if ok and type(id) == "string" and Workspace:GetAttribute("MusicId") == nil then
+		Workspace:SetAttribute("MusicId", id)
+	end
+end
+
 local function handle(player: Player, msg: string)
 	if not AdminService.IsAdmin(player) then
 		return
@@ -236,6 +301,7 @@ local function handle(player: Player, msg: string)
 end
 
 function AdminService.Init()
+	task.spawn(loadMusic)
 	-- Register the commands with TextChatService so "/spawn ..." isn't rejected as unknown.
 	local folder = Instance.new("Folder")
 	folder.Name = "StealATungCommands"

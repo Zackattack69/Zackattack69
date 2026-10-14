@@ -8,10 +8,12 @@
 -- BaseService.Hooks so the two don't require each other.
 
 local CollectionService = game:GetService("CollectionService")
+local PhysicsService = game:GetService("PhysicsService")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local BaseSkins = require(Shared.Config.BaseSkins)
 local Economy = require(Shared.Config.Economy)
 local Layout = require(Shared.Config.Layout)
 local Mutations = require(Shared.Config.Mutations)
@@ -32,8 +34,7 @@ export type BaseState = {
 	owner: Player?,
 	model: Model?,
 	slots: number,
-	theme: string,
-	golden: boolean,
+	skin: string,
 	tungs: { [number]: Model }, -- slot -> placed model
 	stolen: { [number]: Player }, -- slot -> thief carrying it
 	arriving: { [number]: number }, -- slot -> os.clock() it was bought (following the owner)
@@ -132,6 +133,38 @@ local function setHolding(player: Player)
 	player:SetAttribute("Holding", if e then e.id .. "|" .. (e.m or Mutations.NONE) else nil)
 end
 
+-- Collision groups: base i's locked laser wall ("Laser<i>") blocks everyone
+-- except that base's owner, whose character is in "BaseOwner<i>".
+local function registerGroups()
+	for i = 1, Layout.BASE_COUNT do
+		local laser, owner = "Laser" .. i, "BaseOwner" .. i
+		for _, g in { laser, owner } do
+			if not PhysicsService:IsCollisionGroupRegistered(g) then
+				PhysicsService:RegisterCollisionGroup(g)
+			end
+		end
+		PhysicsService:CollisionGroupSetCollidable(laser, owner, false)
+	end
+end
+
+local function ownerGroup(player: Player): string
+	local i = baseOf[player]
+	return if i then "BaseOwner" .. i else "Default"
+end
+
+local function setCharacterGroup(player: Player)
+	local character = player.Character
+	if not character then
+		return
+	end
+	local group = ownerGroup(player)
+	for _, d in character:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.CollisionGroup = group
+		end
+	end
+end
+
 -- Pad visuals ---------------------------------------------------------------------------------
 local function padParts(st: BaseState, slot: number): (BasePart?, BasePart?)
 	local model = st.model
@@ -163,7 +196,7 @@ local function setPadLook(st: BaseState, slot: number, entry: any?)
 	end
 	local glow = pad:FindFirstChild("Glow") :: BasePart?
 	if glow then
-		glow.Color = if t then Tungs.Color(t) else BaseBuilder.THEMES[st.theme].accent
+		glow.Color = if t then Tungs.Color(t) else BaseSkins.Get(st.skin).accent
 		glow.Transparency = if t then 0.15 else 0.45
 	end
 	button.Color = if t then Tungs.Color(t) else Color3.fromRGB(190, 190, 196)
@@ -352,19 +385,18 @@ function BaseService.Rebuild(i: number)
 	local owner = st.owner
 	local p = owner and DataService.Get(owner)
 	local data = p and p.data
+	-- the look is the owner's chosen skin; rebirths only add floors
 	local info = if data
 		then {
 			index = i,
 			slots = Economy.Slots(data),
-			theme = Economy.Rebirth(data.rebirths).theme,
-			golden = data.indexRewards.Master == true,
+			skin = BaseSkins.Get(data.baseSkin).key,
 			items = data.items,
 			personalBelt = data.rebirths >= 6,
 		}
-		else { index = i, slots = 8, theme = "Wood", golden = false, items = {}, personalBelt = false }
+		else { index = i, slots = 8, skin = BaseSkins.DEFAULT, items = {}, personalBelt = false }
 	st.slots = info.slots
-	st.theme = info.theme
-	st.golden = info.golden
+	st.skin = info.skin
 	local model = BaseBuilder.Build(basesFolder, info)
 	model:SetAttribute("OwnerId", if owner then owner.UserId else 0)
 	model:SetAttribute("Slots", info.slots)
@@ -400,6 +432,15 @@ function BaseService.AddTung(player: Player, id: string, mut: string?, opts: Add
 	local entry = { id = id, m = mut or Mutations.NONE, u = o.uid or DataService.NewUid(data), s = 0 }
 	if o.discover ~= false then
 		EconomyService.Discover(player, id, entry.m)
+	end
+	-- lifetime count per rarity (unlocks rarity base styles); trades don't count
+	local tung = Tungs.Get(id)
+	if tung and o.source ~= "trade" then
+		data.collected[tung.rarity] = (data.collected[tung.rarity] or 0) + 1
+		local skin = BaseSkins.ByKey[tung.rarity .. "Style"]
+		if skin and skin.need and data.collected[tung.rarity] == skin.need then
+			EconomyService.Notify(player, "🎨 New base style unlocked: " .. skin.name .. "! Pick it at the Skins stand.", "success")
+		end
 	end
 	local slot = freeSlot(data, Economy.Slots(data))
 	if not slot then
@@ -839,6 +880,31 @@ function BaseService.Place(player: Player, target: number): (boolean, any)
 	return true, target
 end
 
+-- Base skins -------------------------------------------------------------------------------------------------------
+function BaseService.SetSkin(player: Player, key: string): (boolean, any)
+	local i = baseOf[player]
+	local p = DataService.Get(player)
+	if not i or not p then
+		return false, "Still loading"
+	end
+	local skin = BaseSkins.ByKey[key]
+	if not skin then
+		return false, "Unknown skin"
+	end
+	local unlocked, how = BaseSkins.Unlocked(p.data, skin)
+	if not unlocked then
+		return false, "🔒 " .. how
+	end
+	if p.data.baseSkin == skin.key then
+		return true, skin.key
+	end
+	p.data.baseSkin = skin.key
+	DataService.MarkDirty(player, true)
+	BaseService.Rebuild(i)
+	EconomyService.Notify(player, "🎨 Your base is now " .. skin.name .. "!", "success")
+	return true, skin.key
+end
+
 -- Rebirth -------------------------------------------------------------------------------------------------------------
 function BaseService.Rebirth(player: Player, useSkip: boolean): (boolean, any)
 	local i = baseOf[player]
@@ -923,6 +989,7 @@ local function assign(player: Player)
 			st.alarmCooldown = {}
 			baseOf[player] = i
 			player:SetAttribute("Base", i)
+			setCharacterGroup(player)
 			BaseService.Rebuild(i)
 			BaseService.FillPending(player)
 			DataService.MarkDirty(player, true)
@@ -950,6 +1017,7 @@ local function release(player: Player)
 	st.heldOutside = nil
 	player:SetAttribute("Holding", nil)
 	baseOf[player] = nil
+	setCharacterGroup(player)
 	lastTouch[player] = nil
 	BaseService.Rebuild(i)
 end
@@ -1079,6 +1147,7 @@ local function zoneTick()
 end
 
 function BaseService.Init()
+	registerGroups()
 	basesFolder = (Workspace:WaitForChild("Arena") :: Instance):WaitForChild("Bases") :: Folder
 	for i = 1, Layout.BASE_COUNT do
 		bases[i] = {
@@ -1086,8 +1155,7 @@ function BaseService.Init()
 			owner = nil,
 			model = nil,
 			slots = 8,
-			theme = "Wood",
-			golden = false,
+			skin = BaseSkins.DEFAULT,
 			tungs = {},
 			stolen = {},
 			arriving = {},
@@ -1160,11 +1228,23 @@ function BaseService.Init()
 		end
 	end)
 
-	-- a held Tung goes back to its pad when you respawn
+	-- a held Tung goes back to its pad when you respawn; your character can pass your own lasers
 	local function hookCharacter(player: Player)
 		player.CharacterRemoving:Connect(function()
 			BaseService.ReturnHeld(player)
 		end)
+		local function onCharacter(character: Model)
+			setCharacterGroup(player)
+			character.DescendantAdded:Connect(function(d)
+				if d:IsA("BasePart") then
+					d.CollisionGroup = ownerGroup(player)
+				end
+			end)
+		end
+		player.CharacterAdded:Connect(onCharacter)
+		if player.Character then
+			onCharacter(player.Character)
+		end
 	end
 	Players.PlayerAdded:Connect(hookCharacter)
 	for _, player in Players:GetPlayers() do

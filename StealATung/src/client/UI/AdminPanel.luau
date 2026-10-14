@@ -4,9 +4,13 @@
 --   Money:  give yourself any amount (1000, 2.5M, 1e15...) or tap a quick amount
 --   Tungs:  spawn any Tung, with any mutation, into your base or onto the belt
 --   Events: start any server event or Admin Abuse
+--   Music:  set the theme song by its asset ID (saved for every server)
+
+local Workspace = game:GetService("Workspace")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Events = require(Shared.Config.Events)
+local GameConfig = require(Shared.Config.GameConfig)
 local Mutations = require(Shared.Config.Mutations)
 local Tungs = require(Shared.Config.Tungs)
 local Format = require(Shared.Util.Format)
@@ -66,7 +70,7 @@ function AdminPanel.Build(): any
 	unlockedView = Lib.new("Frame", { Name = "Unlocked", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, Parent = body })
 	local tabHolder = Lib.new("Frame", { Size = UDim2.new(1, 0, 0, 56), BackgroundTransparency = 1, Parent = unlockedView })
 	local pages: { [string]: Frame } = {}
-	for _, name in { "Money", "Tungs", "Events" } do
+	for _, name in { "Money", "Tungs", "Events", "Music" } do
 		pages[name] = Lib.new("Frame", { Name = name, Size = UDim2.new(1, 0, 1, -64), Position = UDim2.fromOffset(0, 64), BackgroundTransparency = 1, Visible = false, Parent = unlockedView })
 	end
 
@@ -177,14 +181,52 @@ function AdminPanel.Build(): any
 		State.Request("AdminEvent", "stop")
 	end })
 
-	local select = Lib.tabs(tabHolder, { "Money", "Tungs", "Events" }, 48, function(name)
+	-- Music
+	local musicPage = pages.Music
+	Lib.label({ Text = "🎵 Theme song (loops forever; events re-mix it)", Size = UDim2.new(1, 0, 0, 30), Dark = true, Parent = musicPage })
+	Lib.label({
+		Text = "1) Studio: Window → Asset Manager → Import your mp3   2) Right-click it → Copy Asset ID   3) Paste it here",
+		Size = UDim2.new(1, 0, 0, 24),
+		Position = UDim2.fromOffset(0, 34),
+		Dark = true,
+		TextColor3 = C.SubText,
+		Parent = musicPage,
+	})
+	local musicBox = textBox(musicPage, "song ID, e.g. 1234567890", UDim2.new(0.62, 0, 0, 72), UDim2.fromOffset(0, 70))
+	Lib.button({ Text = "🎵 SET SONG", Size = UDim2.new(0.36, 0, 0, 72), Position = UDim2.new(0.64, 0, 0, 70), Color = C.Purple, Color2 = C.Purple2, Parent = musicPage, OnClick = function()
+		local ok = State.Request("AdminMusic", musicBox.Text)
+		if ok then
+			Lib.sound("Purchase")
+		end
+	end })
+	Lib.button({ Text = "🔇 Music off", Size = UDim2.fromOffset(220, 60), Position = UDim2.fromOffset(0, 160), Color = C.Grey, Color2 = C.Grey2, Parent = musicPage, OnClick = function()
+		State.Request("AdminMusic", "off")
+	end })
+	local current = Lib.label({ Text = "", Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 236), Dark = true, TextColor3 = C.SubText, Parent = musicPage })
+	Lib.label({
+		Text = "No sound? The song must be approved by Roblox, and the place must be published by the account that uploaded it.",
+		Size = UDim2.new(1, 0, 0, 24),
+		Position = UDim2.fromOffset(0, 270),
+		Dark = true,
+		TextColor3 = C.SubText,
+		Parent = musicPage,
+	})
+	local function showCurrent()
+		local id = Workspace:GetAttribute("MusicId")
+		local text = if type(id) == "string" then id else GameConfig.MusicId
+		current.Text = "Now playing: " .. (if text == "" then "nothing" else text)
+	end
+	showCurrent()
+	Workspace:GetAttributeChangedSignal("MusicId"):Connect(showCurrent)
+
+	local select = Lib.tabs(tabHolder, { "Money", "Tungs", "Events", "Music" }, 48, function(name)
 		for n, p in pages do
 			p.Visible = n == name
 		end
 		if name == "Tungs" then
 			buildTungGrid()
 		end
-	end, { Money = C.Money, Tungs = C.Purple, Events = C.Orange })
+	end, { Money = C.Money, Tungs = C.Purple, Events = C.Orange, Music = C.Blue })
 	select("Money")
 
 	return win

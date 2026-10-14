@@ -1,6 +1,8 @@
 --!strict
 -- Background music.
---   * The main theme (GameConfig.MusicId) loops forever.
+--   * The main theme loops forever. Its ID comes from the admin panel's Music
+--     tab (Workspace attribute "MusicId", saved in a DataStore) or, if that's
+--     not set, GameConfig.MusicId.
 --   * During an event the music changes to fit it. If GameConfig.EventMusic has
 --     its own track for that event, the theme crossfades into that track.
 --     Otherwise the theme itself is re-mixed live to match the mood: dreamy for
@@ -8,6 +10,7 @@
 --     Belt, slow, dark and muffled for Thief Night, loud and bassy for Admin Abuse.
 --   * Music.Cut(seconds) ducks it for the big Mythic spawn moment.
 
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
@@ -157,20 +160,65 @@ local function onEventChanged()
 	end
 end
 
-function Music.Init()
-	if GameConfig.MusicId ~= "" then
-		local s = newSound("Theme", GameConfig.MusicId)
-		eq = effect("EqualizerSoundEffect", s)
-		reverb = effect("ReverbSoundEffect", s)
-		chorus = effect("ChorusSoundEffect", s)
-		chorus.Depth = 0.45
-		chorus.Rate = 0.6
-		tremolo = effect("TremoloSoundEffect", s)
-		tremolo.Frequency = 4
-		pitchFix = effect("PitchShiftSoundEffect", s)
-		s:Play()
-		theme = s
+local function themeId(): string
+	local fromAdmin = Workspace:GetAttribute("MusicId")
+	if type(fromAdmin) == "string" then
+		return fromAdmin -- "" means the admin turned it off
 	end
+	return GameConfig.MusicId
+end
+
+-- Tell admins (only them) why there's no music, so it's easy to fix.
+local function adminHint(text: string)
+	if Players.LocalPlayer:GetAttribute("IsAdmin") then
+		State.Fire("Toast", text, "info")
+	end
+end
+
+local loadToken = 0
+local function setTheme(id: string)
+	local s = theme
+	if not s then
+		return
+	end
+	loadToken += 1
+	local token = loadToken
+	if id == "" then
+		s:Stop()
+		s.SoundId = ""
+		task.delay(6, function()
+			if token == loadToken then
+				adminHint("🎵 No theme song yet. Upload it, then paste its ID in 👑 Admin → Music.")
+			end
+		end)
+		return
+	end
+	s.SoundId = id
+	s.TimePosition = 0
+	s:Play()
+	task.delay(12, function()
+		if token == loadToken and not s.IsLoaded then
+			warn("[Music] The theme song " .. id .. " didn't load. Check it's approved, and that the place is published by the account that uploaded it.")
+			adminHint("🎵 The song didn't load. Is it approved yet? Publish the place from the account that uploaded the song.")
+		end
+	end)
+end
+
+function Music.Init()
+	local s = newSound("Theme", "")
+	eq = effect("EqualizerSoundEffect", s)
+	reverb = effect("ReverbSoundEffect", s)
+	chorus = effect("ChorusSoundEffect", s)
+	chorus.Depth = 0.45
+	chorus.Rate = 0.6
+	tremolo = effect("TremoloSoundEffect", s)
+	tremolo.Frequency = 4
+	pitchFix = effect("PitchShiftSoundEffect", s)
+	theme = s
+	setTheme(themeId())
+	Workspace:GetAttributeChangedSignal("MusicId"):Connect(function()
+		setTheme(themeId())
+	end)
 
 	-- one place sets the volumes: settings slider x mood x crossfade x duck
 	RunService.Heartbeat:Connect(function()

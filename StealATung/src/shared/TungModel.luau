@@ -17,6 +17,7 @@ local Tungs = require(script.Parent.Config.Tungs)
 local Mutations = require(script.Parent.Config.Mutations)
 local Format = require(script.Parent.Util.Format)
 local Style = require(script.Parent.Style)
+local TungFace = require(script.Parent.TungFace)
 
 local TungModel = {}
 
@@ -31,7 +32,6 @@ local ALONG_Z = CFrame.Angles(0, math.rad(90), 0) -- cylinder axis X -> Z
 local WOOD = Color3.fromRGB(226, 160, 98)
 local WOOD_DARK = Color3.fromRGB(165, 104, 60)
 local WOOD_LIGHT = Color3.fromRGB(255, 218, 152)
-local BLACK = Color3.fromRGB(20, 20, 24)
 local WHITE = Color3.fromRGB(250, 250, 250)
 
 TungModel.HEIGHT = 6.4 -- unscaled height to the top of the log
@@ -430,25 +430,10 @@ function TungModel.Build(id: string, mut: string?, opts: BuildOpts?): Model
 	sk(part(model, "TopRing", CYL, Vector3.new(0.1, 2.42, 2.42), CFrame.new(0, 6.42, 0) * VERT, skinColor:Lerp(WOOD_LIGHT, 0.6), skinMat))
 	part(model, "TopCore", CYL, Vector3.new(0.1, 1.3, 1.3), CFrame.new(0, 6.44, 0) * VERT, skinColor:Lerp(WOOD_DARK, 0.4), skinMat)
 
-	-- face (front is -Z)
-	local glow = look.eyes == "Glow"
-	for _, sx in { -1, 1 } do
-		if glow then
-			table.insert(eyes, part(model, "Eye", BALL, Vector3.new(0.7, 0.7, 0.7), CFrame.new(sx * 0.5, 5.0, -1.12), look.eyeColor or WHITE, M.Neon))
-		else
-			part(model, "EyeWhite", BALL, Vector3.new(0.98, 0.98, 0.98), CFrame.new(sx * 0.5, 5.0, -1.02), WHITE)
-			table.insert(eyes, part(model, "Pupil", BALL, Vector3.new(0.5, 0.5, 0.5), CFrame.new(sx * 0.46, 4.96, -1.47), BLACK))
-			part(model, "Shine", BALL, Vector3.new(0.17, 0.17, 0.17), CFrame.new(sx * 0.46 - 0.12, 5.08, -1.69), WHITE, M.Neon)
-		end
-		if look.eyes == "Sleepy" then
-			part(model, "Eyelid", BLOCK, Vector3.new(0.9, 0.45, 0.4), CFrame.new(sx * 0.5, 5.2, -1.3), skinColor, skinMat)
-		end
-		part(model, "Brow", BLOCK, Vector3.new(0.82, 0.24, 0.2), CFrame.new(sx * 0.5, 5.7, -1.25) * CFrame.Angles(0, 0, sx * -0.25), BLACK)
+	-- face (front is -Z): each Tung has its own expression (TungFace)
+	for _, p in TungFace.Build(model, look, skinColor, skinMat, part) do
+		table.insert(eyes, p)
 	end
-	part(model, "Nose", BALL, Vector3.new(0.42, 0.42, 0.42), CFrame.new(0, 4.55, -1.35), skinColor:Lerp(WOOD_DARK, 0.35), skinMat)
-	part(model, "Mouth", BLOCK, Vector3.new(1.2, 0.42, 0.2), CFrame.new(0, 3.92, -1.24), Color3.fromRGB(110, 20, 40))
-	part(model, "Teeth", BLOCK, Vector3.new(0.95, 0.12, 0.1), CFrame.new(0, 4.07, -1.33), WHITE)
-	part(model, "Tongue", BLOCK, Vector3.new(0.5, 0.14, 0.1), CFrame.new(0, 3.77, -1.33), Color3.fromRGB(255, 110, 140))
 
 	-- arms: left hangs, right holds the bat
 	local lShoulder, lHand = Vector3.new(-1.32, 5.0, 0), Vector3.new(-1.8, 3.35, -0.25)
@@ -495,6 +480,20 @@ function TungModel.Build(id: string, mut: string?, opts: BuildOpts?): Model
 		model:ScaleTo(scale)
 	end
 	model:SetAttribute("Height", TungModel.HEIGHT * scale)
+	-- top of the head including hats / halos (auras and invisible helpers don't count)
+	local top = TungModel.HEIGHT * scale
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and not CollectionService:HasTag(d, "AuraFx") then
+			local y = d.Position.Y + d.Size.Y / 2
+			if d.Name == "Halo" then
+				y = d.Position.Y + 1.7 * scale -- the moon emoji around it
+			elseif d.Transparency >= 1 then
+				continue
+			end
+			top = math.max(top, y)
+		end
+	end
+	model:SetAttribute("Top", math.min(top, TungModel.HEIGHT * scale * 1.8))
 
 	if o.plate then
 		TungModel.Nameplate(model, t.id, m, o.plate)
@@ -567,14 +566,17 @@ function TungModel.Nameplate(model: Model, id: string, mut: string?, mode: strin
 	if not t or not root then
 		return nil
 	end
-	local h = (model:GetAttribute("Height") :: number?) or TungModel.HEIGHT
+	local top = (model:GetAttribute("Top") :: number?) or (model:GetAttribute("Height") :: number?) or TungModel.HEIGHT
 	local mutation = Mutations.Get(mut)
 	local belt = mode == "belt"
 
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "Nameplate"
 	bb.Size = if belt then UDim2.fromOffset(190, 100) else UDim2.fromOffset(170, 52)
-	bb.StudsOffset = Vector3.new(0, h + (if belt then 2.4 else 1.2), 0)
+	-- the plate's bottom edge sits above the head (SizeOffset lifts it by half its own height),
+	-- so it never sinks into the body however far away you are
+	bb.SizeOffset = Vector2.new(0, 0.5)
+	bb.StudsOffset = Vector3.new(0, top + 1, 0)
 	bb.LightInfluence = 0
 	bb.MaxDistance = if belt then 110 else 60
 	bb.ResetOnSpawn = false

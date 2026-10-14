@@ -17,7 +17,7 @@ Economy.PADS_PER_ROW = 6
 
 -- Belt
 Economy.BELT_INTERVAL = 3 -- a new Tung every 3 s
-Economy.BELT_TRAVEL = 20 -- each Tung rides the full-length belt for 20 s (~20 studs/s)
+Economy.BELT_TRAVEL = 40 -- each Tung rides the full-length belt for 40 s (~10 studs/s, a slow walk)
 Economy.SPEED_BELT_MULT = 1.5 -- Speed Belt event: belt speed (it also spawns twice as often)
 Economy.PERSONAL_BELT_INTERVAL = 30 -- Rebirth 6 perk
 Economy.BUY_HOLD = 0.25 -- short, so you can grab a Tung as it rides past
@@ -46,27 +46,25 @@ export type RebirthInfo = {
 	needCount: number,
 	mult: number,
 	slots: number,
-	theme: string,
-	themeName: string,
 	perk: string?,
 }
 
 -- Rebirth table (Design Doc). Level 0 is the starting state.
 local TABLE: { RebirthInfo } = {
-	{ level = 0, cost = 0, needRarity = nil, needCount = 0, mult = 1, slots = 8, theme = "Wood", themeName = "Wooden fence plot", perk = nil },
-	{ level = 1, cost = 1e6, needRarity = "Epic", needCount = 1, mult = 1.5, slots = 10, theme = "Stone", themeName = "Stone walls", perk = "Collect All button" },
-	{ level = 2, cost = 1e7, needRarity = "Legendary", needCount = 1, mult = 2, slots = 12, theme = "Bamboo", themeName = "Bamboo dojo", perk = "+10% walk speed" },
-	{ level = 3, cost = 1e8, needRarity = "Legendary", needCount = 2, mult = 3, slots = 14, theme = "Crystal", themeName = "Crystal garden", perk = "Base lock lasts 90 seconds" },
-	{ level = 4, cost = 1e9, needRarity = "Secret", needCount = 1, mult = 5, slots = 16, theme = "Sky", themeName = "Floating sky island", perk = "+5% luck on the belt" },
-	{ level = 5, cost = 1e10, needRarity = "Secret", needCount = 2, mult = 8, slots = 18, theme = "Volcano", themeName = "Volcano fortress", perk = "Rebirth-only cosmetic trail" },
-	{ level = 6, cost = 1e11, needRarity = "Mythic", needCount = 1, mult = 12, slots = 20, theme = "Space", themeName = "Space station", perk = "Personal belt: 1 Tung every 30 s, just for you" },
+	{ level = 0, cost = 0, needRarity = nil, needCount = 0, mult = 1, slots = 8, perk = nil },
+	{ level = 1, cost = 1e6, needRarity = "Epic", needCount = 1, mult = 1.5, slots = 10, perk = "Collect All button" },
+	{ level = 2, cost = 1e7, needRarity = "Legendary", needCount = 1, mult = 2, slots = 12, perk = "+10% walk speed" },
+	{ level = 3, cost = 1e8, needRarity = "Legendary", needCount = 2, mult = 3, slots = 14, perk = "Base lock lasts 90 seconds" },
+	{ level = 4, cost = 1e9, needRarity = "Secret", needCount = 1, mult = 5, slots = 16, perk = "+5% luck on the belt" },
+	{ level = 5, cost = 1e10, needRarity = "Secret", needCount = 2, mult = 8, slots = 18, perk = "Rebirth-only cosmetic trail" },
+	{ level = 6, cost = 1e11, needRarity = "Mythic", needCount = 1, mult = 12, slots = 20, perk = "Personal belt: 1 Tung every 30 s, just for you" },
 }
 
 function Economy.Rebirth(level: number): RebirthInfo
 	if level < #TABLE then
 		return TABLE[level + 1]
 	end
-	-- 7+: cost x10 each time, +5x multiplier, +2 slots, golden temple
+	-- 7+: cost x10 each time, +5x multiplier, +2 slots
 	local extra = level - 6
 	return {
 		level = level,
@@ -75,9 +73,7 @@ function Economy.Rebirth(level: number): RebirthInfo
 		needCount = 1,
 		mult = 12 + 5 * extra,
 		slots = math.min(Economy.MAX_SLOTS, 20 + 2 * extra),
-		theme = "Golden",
-		themeName = "Golden temple",
-		perk = if level == 7 then "Golden temple base (max look)" else nil,
+		perk = nil,
 	}
 end
 

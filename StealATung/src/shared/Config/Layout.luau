@@ -10,42 +10,43 @@
 --             Z = +228 wall
 --
 -- A base is a closed box building (walls, windows and a roof) with up to 4
--- floors; the laser door at the front is the only way in or out. Each floor
--- holds 8 Tungs: 4 along the left wall and 4 along the right wall, facing the
--- middle aisle. Stairs run along the inside of the front wall (alternating
--- sides per floor). The Rebirth Altar stands at the back in the middle of the
--- ground floor.
+-- floors. The whole ground-floor front is a laser wall: the only way in or out.
+-- Each floor holds 8 Tungs: 4 along the left wall and 4 along the right wall,
+-- facing the middle aisle. Stairs run along the inside of the back wall
+-- (alternating sides per floor). The Rebirth Altar stands at the back in the
+-- middle of the ground floor, with the Skins stand next to it.
 
 local Layout = {}
 
 -- Arena
 Layout.CORRIDOR_HALF = 46 -- gates sit at X = ±46
 Layout.PLOT_SPACING = 104 -- distance between bases along Z
-Layout.ARENA_HALF_X = 46 + 64 + 44 -- 154
+Layout.ARENA_HALF_X = 46 + 70 + 38 -- 154
 Layout.ARENA_HALF_Z = 228
 Layout.WALL_HEIGHT = 52 -- about 10 Roblox characters
 Layout.BASE_COUNT = 8
 
 -- Base building
-Layout.BASE_WIDTH = 48 -- across (local X: -24 .. 24)
-Layout.BASE_DEPTH = 64 -- from the gate to the back wall
+Layout.BASE_WIDTH = 54 -- across (local X: -27 .. 27)
+Layout.BASE_DEPTH = 70 -- from the laser front to the back wall
 Layout.FLOOR_HEIGHT = 16
 Layout.WALL_THICKNESS = 1
-Layout.WINDOW_BOTTOM = 4.5 -- window band on every floor, above that floor's base height
-Layout.WINDOW_TOP = 11.5
+Layout.WINDOW_BOTTOM = 3.5 -- window band on every floor, above that floor's base height
+Layout.WINDOW_TOP = 12.5
+Layout.LASER_HEIGHT = 12.5 -- the ground-floor front is one big laser wall this tall
 Layout.SLOTS_PER_FLOOR = 8
 Layout.MAX_FLOORS = 4
-Layout.GATE_WIDTH = 16
-Layout.GATE_HEIGHT = 11
-Layout.PAD_X = 18 -- pads along the side walls
-Layout.BUTTON_X = 11.5 -- collect buttons in front of them, towards the aisle
-Layout.ROW_FIRST = 14 -- depth of the first pad row
+Layout.PAD_X = 21 -- pads along the side walls
+Layout.BUTTON_X = 14.5 -- collect buttons in front of them, towards the aisle
+Layout.ROW_FIRST = 16 -- depth of the first pad row
 Layout.ROW_SPACING = 11
-Layout.STAIR_INNER = 9 -- stairs (16 steps) run along the front wall from |x| = 22 (bottom) to 9 (top), clear of the door
-Layout.STAIR_OUTER = 22
-Layout.STAIR_FRONT = 1.5 -- stairs occupy depth 1.5 .. 6.5
-Layout.STAIR_BACK = 6.5
-Layout.ALTAR_DEPTH = 57
+Layout.STAIR_INNER = 9 -- stairs (16 one-stud steps) run along the back wall from |x| = 25 (bottom) to 9 (top)
+Layout.STAIR_OUTER = 25
+Layout.STAIR_FRONT = 63.5 -- stairs occupy depth 63.5 .. 68.5
+Layout.STAIR_BACK = 68.5
+Layout.ALTAR_DEPTH = 58
+Layout.SKINS_X = 14 -- Skins stand, right of the altar
+Layout.SKINS_DEPTH = 59
 
 Layout.FLOOR_TOP = 0.4 -- floor surface above that floor's base height
 Layout.PAD_TOP = 1.0 -- where placed Tungs stand
@@ -120,7 +121,7 @@ function Layout.ButtonCFrame(i: number, slot: number, slots: number): CFrame
 end
 
 function Layout.Spawn(i: number): CFrame
-	return Layout.Local(i, 0, 3.5, 9) * CFrame.Angles(0, math.pi, 0)
+	return Layout.Local(i, 0, 3.5, 10) * CFrame.Angles(0, math.pi, 0)
 end
 
 function Layout.Altar(i: number, _slots: number): CFrame
@@ -132,11 +133,12 @@ function Layout.StairSide(f: number): number
 	return if f % 2 == 1 then -1 else 1
 end
 
--- Rebirth 6 perk: a short belt along the back wall, right of the altar.
+-- Rebirth 6 perk: a short belt along the back wall on the right (the ground
+-- floor's stairs are on the left), behind the Skins stand.
 function Layout.PersonalBelt(i: number, _slots: number): (Vector3, Vector3)
 	local d = Layout.BASE_DEPTH - 3.5
-	local a = Layout.Local(i, 19, 1.6, d).Position
-	local b = Layout.Local(i, 7, 1.6, d).Position
+	local a = Layout.Local(i, 22, 1.6, d).Position
+	local b = Layout.Local(i, 10, 1.6, d).Position
 	return a, b
 end
 

@@ -858,8 +858,9 @@ local function eventVisuals()
 	end
 end
 
--- Own laser gate: the owner walks straight through ---------------------------------------------------------------------
-local function hookOwnLasers(base: Instance)
+-- Own base: your name above the roof shows in gold. (Walking through your own
+-- locked lasers is handled on the server with collision groups.) ----------------------
+local function hookOwnBase(base: Instance)
 	if not base:IsA("Model") then
 		return
 	end
@@ -873,16 +874,6 @@ local function hookOwnLasers(base: Instance)
 		local name = gui and gui:FindFirstChild("OwnerName") :: TextLabel?
 		if name then
 			name.TextColor3 = Color3.fromRGB(255, 220, 90)
-		end
-		local lasers = base:FindFirstChild("Lasers")
-		local wall = lasers and lasers:FindFirstChild("Wall") :: BasePart?
-		if wall then
-			wall.CanCollide = false
-			wall:GetPropertyChangedSignal("CanCollide"):Connect(function()
-				if wall.CanCollide and base:GetAttribute("OwnerId") == player.UserId then
-					wall.CanCollide = false
-				end
-			end)
 		end
 	end
 	check()
@@ -1269,14 +1260,14 @@ function WorldFx.Init()
 		end
 	end)
 
-	-- Lasers on own base
+	-- Own base highlight
 	local arena = Workspace:WaitForChild("Arena")
 	local bases = arena:WaitForChild("Bases")
 	for _, b in bases:GetChildren() do
-		hookOwnLasers(b)
+		hookOwnBase(b)
 	end
 	bases.ChildAdded:Connect(function(b)
-		task.defer(hookOwnLasers, b)
+		task.defer(hookOwnBase, b)
 	end)
 
 	-- Events

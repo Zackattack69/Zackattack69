@@ -1,7 +1,7 @@
 --!strict
 -- Screen effects:
 --   * candy toasts
---   * compact banners that slide down from the top and leave after 2.6 s
+--   * compact banners that slide down just under the money and leave after 2.6 s
 --     (rare spawns, steals, events)
 --   * the bouncy gradient "+$12.4K" collect pop
 --   * "STOLEN!" / "PURCHASED!" / "NEW!" pops
@@ -63,7 +63,7 @@ end
 
 function Effects.Init(fxGui: ScreenGui)
 	-- Toasts -----------------------------------------------------------------------------------------------
-	local toastHolder = Lib.new("Frame", { Name = "Toasts", Size = UDim2.fromOffset(500, 220), Position = UDim2.new(0.5, 0, 0, 168), AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, Parent = fxGui })
+	local toastHolder = Lib.new("Frame", { Name = "Toasts", Size = UDim2.fromOffset(500, 220), Position = UDim2.new(0.5, 0, 0, 112), AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, Parent = fxGui })
 	Lib.hudFit(toastHolder)
 	Lib.list(toastHolder, 6, false, Enum.HorizontalAlignment.Center).VerticalAlignment = Enum.VerticalAlignment.Top
 	local order = 0
@@ -104,9 +104,10 @@ function Effects.Init(fxGui: ScreenGui)
 	-- Centre banners ------------------------------------------------------------------------------------------------
 	local queue: { any } = {}
 	local showing = false
-	local HIDDEN = UDim2.new(0.5, 0, 0, -90)
-	local SHOWN = UDim2.new(0.5, 0, 0, 104)
-	local bannerRoot = Lib.new("Frame", { Name = "BannerRoot", Size = UDim2.fromOffset(540, 58), Position = HIDDEN, AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, ZIndex = 70, Parent = fxGui })
+	-- hidden well above the screen AND invisible, so no sliver of it peeks out under the top bar
+	local HIDDEN = UDim2.new(0.5, 0, 0, -220)
+	local SHOWN = UDim2.new(0.5, 0, 0, 40)
+	local bannerRoot = Lib.new("Frame", { Name = "BannerRoot", Size = UDim2.fromOffset(540, 58), Position = HIDDEN, AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, ZIndex = 70, Visible = false, Parent = fxGui })
 	Lib.hudFit(bannerRoot)
 	local banner = Lib.new("Frame", { Name = "Banner", Size = UDim2.fromScale(1, 1), BackgroundColor3 = WHITE, ZIndex = 70, Parent = bannerRoot })
 	Lib.corner(banner, 20)
@@ -129,6 +130,7 @@ function Effects.Init(fxGui: ScreenGui)
 		rainbowStrokeInst.Thickness = if b.rainbow then 4 else 0
 		bannerText.Text = b.text
 		bannerRoot.Position = HIDDEN
+		bannerRoot.Visible = true
 		local sc = banner:FindFirstChild("Pop") :: UIScale? or Lib.new("UIScale", { Name = "Pop", Parent = banner })
 		;(sc :: UIScale).Scale = 0.85
 		Lib.tween(bannerRoot, 0.4, { Position = SHOWN }, Enum.EasingStyle.Back)
@@ -139,6 +141,7 @@ function Effects.Init(fxGui: ScreenGui)
 		task.delay(2.6, function()
 			Lib.tween(bannerRoot, 0.3, { Position = HIDDEN }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
 			task.wait(0.4)
+			bannerRoot.Visible = false
 			showing = false
 			nextBanner()
 		end)

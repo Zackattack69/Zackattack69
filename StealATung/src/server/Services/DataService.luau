@@ -8,8 +8,10 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local BaseSkins = require(Shared.Config.BaseSkins)
 local Economy = require(Shared.Config.Economy)
 local GameConfig = require(Shared.Config.GameConfig)
+local Tungs = require(Shared.Config.Tungs)
 local Remotes = require(Shared.Remotes)
 
 local AUTOSAVE_INTERVAL = 60
@@ -60,6 +62,8 @@ local function defaultData(): any
 		index = {}, -- [tungId] = { t = first found (unix), m = { [mutation] = true } }
 		indexRewards = {}, -- [rarity] = true, Mut_<key> = true, Master = true
 		aura = "", -- equipped mutation aura cosmetic
+		baseSkin = BaseSkins.DEFAULT, -- chosen base look (Config/BaseSkins)
+		collected = {}, -- [rarity] = Tungs of that rarity ever collected (unlocks rarity base styles)
 		items = { Bat = 1, SpeedCoil = false, Banana = false, Honey = false, Alarm = false },
 		boosts = { Money2x = 0, Luck2x = 0 }, -- unix time the boost ends
 		tokens = { SkipRebirth = 0 },
@@ -237,6 +241,8 @@ local function fullSnapshot(player: Player, data: any): any
 	snap.index = data.index
 	snap.indexRewards = data.indexRewards
 	snap.aura = data.aura
+	snap.baseSkin = data.baseSkin
+	snap.collected = data.collected
 	snap.items = data.items
 	snap.tokens = data.tokens
 	snap.passes = data.passes
@@ -273,6 +279,16 @@ local function onPlayerAdded(player: Player)
 		return
 	end
 	reconcile(data, defaultData())
+	-- saves from before base skins: count each Tung already in the Index once
+	if not data.flags.collectedSeeded then
+		data.flags.collectedSeeded = true
+		for id in data.index do
+			local t = Tungs.Get(id)
+			if t then
+				data.collected[t.rarity] = (data.collected[t.rarity] or 0) + 1
+			end
+		end
+	end
 
 	local profile: Profile = {
 		player = player,

@@ -5,6 +5,7 @@
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Economy = require(Shared.Config.Economy)
+local Layout = require(Shared.Config.Layout)
 local Tungs = require(Shared.Config.Tungs)
 local Format = require(Shared.Util.Format)
 
@@ -77,12 +78,12 @@ function RebirthPanel.Build(): any
 
 		line(gainList, "✖️ Money x" .. cur.mult .. "  →  x" .. nextInfo.mult .. " forever", 1)
 		line(gainList, "🟫 Slots " .. cur.slots .. "  →  " .. nextInfo.slots, 2)
-		line(gainList, "🏯 New base: " .. nextInfo.themeName, 3)
+		line(gainList, "🏢 Floors " .. Layout.Floors(cur.slots) .. "  →  " .. Layout.Floors(nextInfo.slots), 3)
 		local perk = Economy.PERKS[d.rebirths + 1]
 		if perk then
 			line(gainList, "⭐ Perk: " .. perk, 4)
 		end
-		line(gainList, "🎆 A bigger, fancier base + fireworks", 5)
+		line(gainList, "🎆 Fireworks! (your base skin stays the same)", 5)
 
 		local skips = d.tokens and d.tokens.SkipRebirth or 0
 		local enoughMoney = d.money >= nextInfo.cost
