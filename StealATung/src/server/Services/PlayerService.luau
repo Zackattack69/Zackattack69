@@ -62,8 +62,7 @@ function PlayerService.Slow(player: Player, seconds: number, factor: number)
 end
 
 -- Bat tool -------------------------------------------------------------------------------------------
-local function makeBat(tier: number): Tool
-	local bat = Items.Bat(tier)
+local function makeBat(bat: Items.Bat): Tool
 	local tool = Instance.new("Tool")
 	tool.Name = "Bat"
 	tool.ToolTip = bat.name .. " — bonk thieves!"
@@ -73,8 +72,9 @@ local function makeBat(tier: number): Tool
 	-- points up and out of the hand instead of lying along the arm.
 	-- (GripPos (0, 0, -0.6), GripRight +Y, GripUp +Z = the barrel end, GripForward -X)
 	tool.Grip = CFrame.fromMatrix(Vector3.new(0, 0, -0.6), Vector3.new(0, 1, 0), Vector3.new(0, 0, 1), Vector3.new(1, 0, 0))
-	tool:SetAttribute("Tier", tier)
+	tool:SetAttribute("Tier", bat.tier)
 
+	local big = bat.fling == true -- Tung Tung's Bat is a big chunky club
 	local handle = Instance.new("Part")
 	handle.Name = "Handle"
 	handle.Size = Vector3.new(0.45, 0.45, 2)
@@ -87,8 +87,8 @@ local function makeBat(tier: number): Tool
 	local barrel = Instance.new("Part")
 	barrel.Name = "Barrel"
 	barrel.Shape = Enum.PartType.Cylinder
-	barrel.Size = Vector3.new(2.6, 0.85, 0.85)
-	barrel.CFrame = handle.CFrame * CFrame.new(0, 0, 2.1) * CFrame.Angles(0, math.rad(90), 0)
+	barrel.Size = if big then Vector3.new(3.6, 1.3, 1.3) else Vector3.new(2.6, 0.85, 0.85)
+	barrel.CFrame = handle.CFrame * CFrame.new(0, 0, if big then 2.6 else 2.1) * CFrame.Angles(0, math.rad(90), 0)
 	barrel.Color = bat.color
 	Style.Apply(barrel, bat.material)
 	barrel.CanCollide = false
@@ -98,6 +98,35 @@ local function makeBat(tier: number): Tool
 	w.Part0 = handle
 	w.Part1 = barrel
 	w.Parent = barrel
+	if big then
+		-- glowing red bands and a burst of sparks so everyone knows it's THE bat
+		for _, z in { 1.6, 2.6, 3.6 } do
+			local band = Instance.new("Part")
+			band.Name = "Band"
+			band.Shape = Enum.PartType.Cylinder
+			band.Size = Vector3.new(0.25, 1.4, 1.4)
+			band.CFrame = handle.CFrame * CFrame.new(0, 0, z) * CFrame.Angles(0, math.rad(90), 0)
+			band.Color = Color3.fromRGB(255, 50, 40)
+			band.Material = Enum.Material.Neon
+			band.CanCollide = false
+			band.Massless = true
+			band.Parent = tool
+			local bw = Instance.new("WeldConstraint")
+			bw.Part0 = handle
+			bw.Part1 = band
+			bw.Parent = band
+		end
+		local fx = Instance.new("ParticleEmitter")
+		fx.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		fx.Rate = 12
+		fx.Lifetime = NumberRange.new(0.4, 0.8)
+		fx.Speed = NumberRange.new(1, 3)
+		fx.Size = NumberSequence.new(0.5, 0)
+		fx.LightEmission = 1
+		fx.Color = ColorSequence.new(Color3.fromRGB(255, 220, 80), Color3.fromRGB(255, 60, 40))
+		fx.Parent = barrel
+		tool.ToolTip = "TUNG TUNG'S BAT: sends anyone FLYING!"
+	end
 
 	local knob = Instance.new("Part")
 	knob.Name = "Knob"
@@ -125,7 +154,8 @@ end
 
 local function giveBat(player: Player)
 	local data = dataOf(player)
-	local tier = if data then data.items.Bat or 1 else 1
+	local bat = if data then Items.BatFor(data) else Items.Bat(1)
+	local tier = bat.tier
 	local backpack = player:FindFirstChildOfClass("Backpack")
 	local character = player.Character
 	-- remove an outdated bat
@@ -148,7 +178,7 @@ local function giveBat(player: Player)
 	if not backpack then
 		return
 	end
-	local tool = makeBat(tier)
+	local tool = makeBat(bat)
 	tool.Activated:Connect(function()
 		local handle = tool:FindFirstChild("Handle")
 		local snd = handle and handle:FindFirstChild("SwingSound") :: Sound?
@@ -396,6 +426,7 @@ function PlayerService.Init()
 	end)
 	Bus.On("PassesChanged", function(player: Player)
 		refreshAppearance(player)
+		giveBat(player) -- Tung Tung's Bat replaces the old bat right away
 	end)
 
 	task.spawn(function()

@@ -11,6 +11,7 @@ export type Bat = {
 	knock: number, -- knockback speed
 	color: Color3,
 	material: Enum.Material,
+	fling: boolean?, -- sends people flying (Tung Tung's Bat)
 }
 
 export type Gear = {
@@ -64,6 +65,17 @@ end
 
 function Items.Bat(tier: number): Bat
 	return Items.Bats[math.clamp(tier, 1, #Items.Bats)]
+end
+
+-- TUNG TUNG'S BAT (10,000 Robux game pass): the legendary bat. One bonk sends anyone flying.
+Items.TungBat = { tier = 99, name = "Tung Tung's Bat", price = 0, reach = 12, cooldown = 0.8, knock = 150, color = Color3.fromRGB(190, 120, 64), material = Enum.Material.Wood, fling = true } :: Bat
+
+-- The bat a player actually swings: Tung Tung's Bat if they own the pass, else their upgrade tier.
+function Items.BatFor(data: any): Bat
+	if data.passes and data.passes.TungBat then
+		return Items.TungBat
+	end
+	return Items.Bat(data.items.Bat or 1)
 end
 
 function Items.BoostPrice(boost: Boost, incomePerSecond: number): number

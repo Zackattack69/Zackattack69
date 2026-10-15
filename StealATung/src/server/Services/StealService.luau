@@ -209,7 +209,9 @@ local function tryBeginSteal(thief: Player, prompt: ProximityPrompt)
 	setThiefState(thief, carry)
 	local t = Tungs.Get(entry.id)
 	local name = Mutations.Prefix(entry.m) .. (if t then t.name else "Tung")
-	EconomyService.Alert(victim, "🚨 Someone is stealing your " .. name .. "!", RED, "Siren", "steal")
+	EconomyService.Alert(victim, "🚨 " .. thief.DisplayName .. " is stealing your " .. name .. "! BONK THEM!", RED, "Siren", "steal")
+	-- the victim also gets a marker over the thief's head, visible through walls
+	Remotes.Event("StealAlert"):FireClient(victim, { thief = thief.UserId, tung = entry.id, mut = entry.m or Mutations.NONE })
 	EconomyService.Notify(thief, "🦹 Run! Get the " .. name .. " back to your base!", "steal")
 end
 
@@ -235,6 +237,37 @@ local function knockback(target: Player, dir: Vector3, speed: number)
 	end)
 end
 
+-- Tung Tung's Bat: launch them high and far, spinning.
+local function fling(target: Player, dir: Vector3, speed: number)
+	local hrp = hrpOf(target)
+	if not hrp then
+		return
+	end
+	local att = Instance.new("Attachment")
+	att.Name = "FlingAttachment"
+	att.Parent = hrp
+	local lv = Instance.new("LinearVelocity")
+	lv.Attachment0 = att
+	lv.RelativeTo = Enum.ActuatorRelativeTo.World
+	lv.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
+	lv.VectorVelocity = Vector3.new(dir.X, 0, dir.Z).Unit * speed + Vector3.new(0, speed * 0.75, 0)
+	lv.MaxForce = 1e7
+	lv.Parent = hrp
+	local av = Instance.new("AngularVelocity")
+	av.Attachment0 = att
+	av.RelativeTo = Enum.ActuatorRelativeTo.World
+	av.AngularVelocity = Vector3.new(math.random(-12, 12), math.random(-20, 20), math.random(-12, 12))
+	av.MaxTorque = 1e6
+	av.Parent = hrp
+	-- tumble like a ragdoll for a moment (the target's own client runs its physics)
+	Remotes.Event("Flung"):FireClient(target, 1.4)
+	task.delay(0.28, function()
+		lv:Destroy()
+		av:Destroy()
+		att:Destroy()
+	end)
+end
+
 function StealService.Swing(player: Player): (boolean, any)
 	local p = DataService.Get(player)
 	local hrp = hrpOf(player)
@@ -242,7 +275,7 @@ function StealService.Swing(player: Player): (boolean, any)
 	if not p or not hrp or not hum or hum.Health <= 0 then
 		return false, nil
 	end
-	local bat = Items.Bat(p.data.items.Bat or 1)
+	local bat = Items.BatFor(p.data)
 	if os.clock() < (swingCooldown[player] or 0) then
 		return false, nil
 	end
@@ -279,8 +312,13 @@ function StealService.Swing(player: Player): (boolean, any)
 		end
 		hitAny = true
 		local wasCarrying = carries[other] ~= nil
-		knockback(other, if flat.Magnitude > 0.1 then flat else look, bat.knock * (if wasCarrying then 1.2 else 0.8))
-		Remotes.Event("BonkFx"):FireAllClients({ pos = ohrp.Position + Vector3.new(0, 2, 0), thief = wasCarrying })
+		local dir = if flat.Magnitude > 0.1 then flat else look
+		if bat.fling then
+			fling(other, dir, bat.knock)
+		else
+			knockback(other, dir, bat.knock * (if wasCarrying then 1.2 else 0.8))
+		end
+		Remotes.Event("BonkFx"):FireAllClients({ pos = ohrp.Position + Vector3.new(0, 2, 0), thief = wasCarrying, fling = bat.fling == true })
 		if wasCarrying then
 			StealService.Drop(other, "bonk")
 			p.data.stats.bonks += 1

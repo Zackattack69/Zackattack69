@@ -39,14 +39,33 @@ local store: DataStore? = nil
 -- Set by EconomyService so this module stays free of gameplay logic.
 DataService.Decorate = nil :: ((Player, any, any) -> ())?
 
+-- Saving can't work in Studio until the place is published and Studio is
+-- allowed to use API services. Then we play on session-only data and tell
+-- admins (Workspace attribute "SavingOff"). In a live server a failed load
+-- kicks the player instead, so a hiccup can never overwrite real progress.
+local function savingOff(reason: any)
+	store = nil
+	game:GetService("Workspace"):SetAttribute("SavingOff", true)
+	warn("[DataService] Progress is NOT being saved (session-only data):", reason)
+end
+
 do
 	local ok, result = pcall(function()
 		return DataStoreService:GetDataStore(GameConfig.DataStoreName)
 	end)
 	if ok then
 		store = result
+		-- one quick test read, so Studio without API access is caught straight away
+		if RunService:IsStudio() then
+			local readOk, err = pcall(function()
+				return (result :: DataStore):GetAsync("ServerProbe")
+			end)
+			if not readOk then
+				savingOff(err)
+			end
+		end
 	else
-		warn("[DataService] DataStores unavailable, using session-only data:", result)
+		savingOff(result)
 	end
 end
 

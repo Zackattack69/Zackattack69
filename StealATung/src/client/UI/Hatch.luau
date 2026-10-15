@@ -115,7 +115,7 @@ local function play(d: any)
 			if not rt then
 				continue
 			end
-			local tile = Lib.new("Frame", { Size = UDim2.fromOffset(128, 160), BackgroundColor3 = Color3.fromRGB(26, 24, 40), BackgroundTransparency = 0.2, LayoutOrder = n, Parent = grid })
+			local tile = Lib.new("Frame", { Size = UDim2.fromOffset(128, 160), BackgroundColor3 = C.Panel, BackgroundTransparency = 0.05, LayoutOrder = n, Parent = grid })
 			Lib.corner(tile, 10)
 			Lib.stroke(tile, Tungs.Color(rt), 3)
 			Lib.tungViewport(tile, rt.id, res.mut, UDim2.new(1, -8, 0, 104), UDim2.fromOffset(4, 2), false)

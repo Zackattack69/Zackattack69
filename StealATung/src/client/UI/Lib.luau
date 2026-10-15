@@ -34,7 +34,7 @@ Lib.Colors = {
 	Wood = Color3.fromRGB(120, 96, 255), -- indigo accent
 	Wood2 = Color3.fromRGB(70, 48, 210),
 	WoodDark = Color3.fromRGB(34, 28, 74), -- bar backgrounds, key chips
-	Outline = Color3.fromRGB(22, 18, 44),
+	Outline = Color3.fromRGB(12, 10, 18), -- near-black outlines, like the Shop
 	Text = Color3.fromRGB(255, 255, 255),
 	TextDark = Color3.fromRGB(255, 255, 255), -- panels are dark now, so "dark" text is white too
 	SubText = Color3.fromRGB(206, 210, 236),
@@ -250,9 +250,10 @@ function Lib.section(parent: Instance, text: string, color: Color3, order: numbe
 	return l
 end
 
--- A tilted yellow "BEST VALUE!" tag for the top-right corner of a card.
-function Lib.ribbon(parent: Instance, text: string): Frame
-	local f = Lib.new("Frame", { Name = "Ribbon", Size = UDim2.fromOffset(150, 30), Position = UDim2.new(1, 10, 0, 6), AnchorPoint = Vector2.new(1, 0), Rotation = 12, BackgroundColor3 = Lib.Colors.Gold, ZIndex = 20, Parent = parent })
+-- A tilted yellow "BEST VALUE!" tag. By default it sits on the top-right
+-- corner of `parent`, kept inside it so a clipping card never cuts it off.
+function Lib.ribbon(parent: Instance, text: string, position: UDim2?): Frame
+	local f = Lib.new("Frame", { Name = "Ribbon", Size = UDim2.fromOffset(136, 28), Position = position or UDim2.new(1, -8, 0, 8), AnchorPoint = Vector2.new(1, 0), Rotation = 7, BackgroundColor3 = Lib.Colors.Gold, ZIndex = 20, Parent = parent })
 	Lib.corner(f, 4)
 	Lib.stroke(f, BLACK, 2.5)
 	Lib.label({ Text = text, Font = Lib.FontTitle, Size = UDim2.new(1, -10, 1, -6), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), TextColor3 = Color3.fromRGB(30, 26, 20), Stroke = false, ZIndex = 21, Parent = f })
@@ -690,7 +691,15 @@ function Lib.iconButton(props: { Icon: string, Label: string?, Size: number, Col
 	})
 	Lib.label({ Name = "Icon", Text = props.Icon, Size = UDim2.fromScale(0.82, if props.Label then 0.7 else 0.82), Position = UDim2.fromScale(0.5, if props.Label then 0.42 else 0.48), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = false, ZIndex = b.ZIndex + 2, Parent = b })
 	if props.Label then
-		Lib.label({ Name = "Caption", Text = props.Label, Font = Lib.FontTitle, Size = UDim2.new(1.35, 0, 0.32, 0), Position = UDim2.new(0.5, 0, 1, 2), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = b.ZIndex + 3, Parent = b })
+		-- caption in the button's colour with a thick black outline (same style as the Shop's side menu)
+		local cap = Lib.label({ Name = "Caption", Text = props.Label, Font = Lib.FontTitle, Size = UDim2.new(1.35, 0, 0.32, 0), Position = UDim2.new(0.5, 0, 1, 2), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = b.ZIndex + 3, Parent = b })
+		local col = props.Color or Lib.Colors.Wood
+		Lib.gradient(cap, col:Lerp(WHITE, 0.6), col:Lerp(WHITE, 0.1), 90)
+		local cs = cap:FindFirstChildOfClass("UIStroke")
+		if cs then
+			cs.Color = BLACK
+			cs.Thickness = 3
+		end
 	end
 	return b
 end

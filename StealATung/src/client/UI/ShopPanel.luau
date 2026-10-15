@@ -39,6 +39,7 @@ local SECTIONS = {
 
 -- Colours for each game pass card.
 local PASS_LOOK: { [string]: { Color3 } } = {
+	TungBat = { Color3.fromRGB(255, 110, 70), Color3.fromRGB(150, 20, 30) },
 	DoubleMoney = { Color3.fromRGB(255, 232, 90), Color3.fromRGB(232, 160, 20) },
 	VIP = { Color3.fromRGB(200, 120, 255), Color3.fromRGB(110, 40, 210) },
 	CollectAll = { Color3.fromRGB(120, 240, 120), Color3.fromRGB(30, 160, 70) },
@@ -127,7 +128,7 @@ function ShopPanel.Build(): any
 		Lib.list(holder, 12, false, Enum.HorizontalAlignment.Center)
 		local player = Players.LocalPlayer
 		for k, egg in Eggs.List do
-			local card = Lib.shopCard(holder, UDim2.new(1, -4, 0, 300), egg.color:Lerp(WHITE, 0.15), egg.color2:Lerp(BLACK, 0.25), k)
+			local card = Lib.shopCard(holder, UDim2.new(1, -4, 0, 322), egg.color:Lerp(WHITE, 0.15), egg.color2:Lerp(BLACK, 0.25), k)
 			local title = Lib.label({ Text = string.upper(egg.name), Font = Lib.FontTitle, Size = UDim2.fromOffset(460, 48), Position = UDim2.fromOffset(16, 8), TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
 			Lib.gradient(title, Color3.fromRGB(255, 250, 190), Color3.fromRGB(255, 200, 40), 90)
 			local ts = title:FindFirstChildOfClass("UIStroke")
@@ -190,7 +191,8 @@ function ShopPanel.Build(): any
 					end, if p.assetId == 0 and not admin then C.Grey else nil)
 					Lib.label({ Text = b.count .. (if b.count == 1 then " Egg" else " Eggs"), Size = UDim2.new(1, 0, 0, 16), Position = UDim2.fromOffset(0, 40), Parent = cell })
 					if b.count == 10 then
-						Lib.ribbon(cell, "BEST VALUE!")
+						-- just above the button, inside the card
+						Lib.ribbon(cell, "BEST VALUE!", UDim2.new(1, -4, 0, -26))
 					end
 				end
 			end
@@ -212,6 +214,9 @@ function ShopPanel.Build(): any
 				end
 			end
 			art(card, p.icon, UDim2.fromOffset(120, 120), UDim2.new(0, 76, 0, 16))
+			if p.key == "TungBat" then
+				Lib.ribbon(card, "LEGENDARY!")
+			end
 			Lib.label({ Text = p.name, Font = Lib.FontTitle, Size = UDim2.new(1, -160, 0, 38), Position = UDim2.fromOffset(150, 8), TextXAlignment = Enum.TextXAlignment.Left, Parent = card })
 			Lib.label({ Text = p.description, Size = UDim2.new(1, -164, 0, 62), Position = UDim2.fromOffset(150, 46), TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, Parent = card })
 			local btn = priceButton(card, robuxText(p), UDim2.new(1, -164, 0, 46), UDim2.new(0, 150, 1, -56), function()

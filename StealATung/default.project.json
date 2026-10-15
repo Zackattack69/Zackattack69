@@ -14,7 +14,7 @@
     },
     "StarterPlayer": {
       "$properties": {
-        "DevCameraOcclusionMode": "Invisicam"
+        "DevCameraOcclusionMode": "Zoom"
       },
       "StarterPlayerScripts": {
         "Client": {

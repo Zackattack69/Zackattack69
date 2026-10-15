@@ -13,6 +13,7 @@ local Belt = require(Client.Belt)
 local PromptUI = require(Client.PromptUI)
 local WorldFx = require(Client.WorldFx)
 local Music = require(Client.Music)
+local Voice = require(Client.Voice)
 local UI = Client.UI
 local Lib = require(UI.Lib)
 local HUD = require(UI.HUD)
@@ -90,6 +91,7 @@ end)
 safe("PromptUI", function()
 	PromptUI.Init(hudGui)
 end)
+safe("Voice", Voice.Init)
 safe("Belt", Belt.Init)
 safe("WorldFx", WorldFx.Init)
 
@@ -123,6 +125,15 @@ end
 task.spawn(function()
 	local d = State.WaitForData()
 	State.Fire("Toast", "👋 Welcome to Steal a Tung! Buy Tungs from the belt and bring them home.", "info")
+	-- admins: say clearly when this test server isn't saving progress (Studio without API access)
+	if workspace:GetAttribute("SavingOff") and player:GetAttribute("IsAdmin") then
+		task.delay(4, function()
+			State.Fire("Toast", "⚠️ Progress is NOT saving in this test. Publish the game, then turn on Game Settings → Security → Studio Access to API Services.", "error")
+		end)
+		task.delay(8, function()
+			State.Fire("Toast", "⚠️ In the real published game, progress saves every minute and when players leave.", "info")
+		end)
+	end
 	if d.loginCanClaim and panels.Quests then
 		task.wait(2.5)
 		panels.Quests.open()

@@ -168,8 +168,9 @@ local function show(prompt: ProximityPrompt, inputType: Enum.ProximityPromptInpu
 	frame.Text = ""
 	local fill = Lib.new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.55, ZIndex = 2, Parent = frame })
 	Lib.corner(fill, 20)
-	local key = Lib.label({ Text = keyHint(prompt, inputType), Size = UDim2.fromOffset(70, 62), Position = UDim2.new(0, 2, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundTransparency = 0, BackgroundColor3 = C.WoodDark, ZIndex = 3, Parent = frame })
+	local key = Lib.label({ Text = keyHint(prompt, inputType), Size = UDim2.fromOffset(70, 62), Position = UDim2.new(0, 2, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundTransparency = 0, BackgroundColor3 = C.Panel, ZIndex = 3, Parent = frame })
 	Lib.corner(key, 16)
+	Lib.stroke(key, C.Outline, 3)
 	Lib.padding(key, 8)
 	local action = Lib.label({ Text = prompt.ActionText, Size = UDim2.new(1, -90, 0.58, 0), Position = UDim2.fromOffset(84, 2), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 3, Parent = frame })
 	local object = Lib.label({ Text = prompt.ObjectText, Size = UDim2.new(1, -90, 0.36, 0), Position = UDim2.new(0, 84, 0.6, 0), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 3, Parent = frame })

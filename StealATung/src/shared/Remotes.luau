@@ -21,7 +21,9 @@ local EVENTS = {
 	"OpenUI", -- server -> client: open a panel (from world prompts)
 	"Trade", -- server -> client: trade request / window updates
 	"Global", -- server -> all: cross-server chat broadcast (Mythic spawns)
-	"Hatch", -- server -> client: an egg you bought hatched { egg, tung, mut }
+	"Hatch", -- server -> client: an egg you bought hatched { egg, results }
+	"Flung", -- server -> client: you got hit by Tung Tung's Bat (tumble for N seconds)
+	"StealAlert", -- server -> victim: someone grabbed your Tung { thief, tung, mut, active }
 }
 local FUNCTIONS = {
 	"Request", -- client -> server: every player action goes through one validated dispatcher

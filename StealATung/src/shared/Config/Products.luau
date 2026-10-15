@@ -26,6 +26,7 @@ local Products = {}
 
 Products.List = {
 	-- Game Passes
+	{ key = "TungBat", name = "TUNG TUNG'S BAT", kind = "Gamepass", price = 10000, assetId = 0, icon = "🏏", description = "The legendary bat. One BONK sends anyone FLYING across the map!" },
 	{ key = "DoubleMoney", name = "2x Money", kind = "Gamepass", price = 399, assetId = 0, icon = "💰", description = "Permanently double income from every pad." },
 	{ key = "VIP", name = "VIP", kind = "Gamepass", price = 499, assetId = 0, icon = "👑", description = "[VIP] chat tag, gold name, +1 slot and the VIP-only VIP Tung." },
 	{ key = "CollectAll", name = "Collect All", kind = "Gamepass", price = 99, assetId = 0, icon = "🧲", description = "Collect All button from the very start." },

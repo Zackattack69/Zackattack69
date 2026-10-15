@@ -27,6 +27,7 @@ local CYL = Enum.PartType.Cylinder
 local BALL = Enum.PartType.Ball
 local VERT = CFrame.Angles(0, 0, math.rad(90))
 local S = Style.Colors
+local WHITE_STRING = Color3.fromRGB(245, 245, 250)
 
 type Props = { [string]: any }
 
@@ -409,6 +410,87 @@ local function buildStand(arena: Instance, name: string, at: Vector3, title: str
 	prompt(hit, action, title, ui)
 end
 
+-- A little extra life: fountains, benches by the paths, balloons around the
+-- plaza and big colourful banners hanging on the arena walls.
+local function buildExtraDecor(arena: Instance)
+	local deco = folder(arena, "ExtraDecor")
+	local stone = Color3.fromRGB(214, 218, 230)
+	local water = Color3.fromRGB(90, 190, 255)
+	-- fountains in the open space between the rows of bases
+	for _, sx in { -1, 1 } do
+		for _, z in { -Layout.PLOT_SPACING, Layout.PLOT_SPACING } do
+			local at = Vector3.new(sx * 25, 0, z)
+			P(deco, { Name = "FountainBasin", Shape = CYL, Size = Vector3.new(1.8, 13, 13), CFrame = CFrame.new(at + Vector3.new(0, 0.9, 0)) * VERT, Color = stone, Material = M.SmoothPlastic })
+			P(deco, { Name = "FountainWater", Shape = CYL, Size = Vector3.new(0.2, 11.4, 11.4), CFrame = CFrame.new(at + Vector3.new(0, 1.7, 0)) * VERT, Color = water, Material = M.Glass, Transparency = 0.25, CanCollide = false })
+			P(deco, { Name = "FountainPillar", Shape = CYL, Size = Vector3.new(4.5, 1.6, 1.6), CFrame = CFrame.new(at + Vector3.new(0, 3.5, 0)) * VERT, Color = stone, Material = M.SmoothPlastic })
+			local bowl = P(deco, { Name = "FountainBowl", Shape = CYL, Size = Vector3.new(0.8, 5, 5), CFrame = CFrame.new(at + Vector3.new(0, 5.8, 0)) * VERT, Color = stone, Material = M.SmoothPlastic })
+			P(deco, { Name = "FountainTop", Shape = CYL, Size = Vector3.new(0.15, 4.4, 4.4), CFrame = CFrame.new(at + Vector3.new(0, 6.25, 0)) * VERT, Color = water, Material = M.Glass, Transparency = 0.25, CanCollide = false })
+			local spout = Instance.new("ParticleEmitter")
+			spout.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+			spout.Rate = 30
+			spout.Lifetime = NumberRange.new(0.8, 1.1)
+			spout.Speed = NumberRange.new(9, 11)
+			spout.SpreadAngle = Vector2.new(12, 12)
+			spout.Acceleration = Vector3.new(0, -22, 0)
+			spout.EmissionDirection = Enum.NormalId.Top
+			spout.Size = NumberSequence.new(0.5, 0.2)
+			spout.Color = ColorSequence.new(Color3.fromRGB(220, 245, 255), water)
+			spout.Transparency = NumberSequence.new(0.1, 0.6)
+			spout.Parent = bowl
+		end
+	end
+	-- benches beside the paths that lead to the bases
+	local wood = Color3.fromRGB(196, 132, 74)
+	for i = 1, Layout.BASE_COUNT do
+		local gate = Layout.BaseCFrame(i).Position
+		local sx = if gate.X < 0 then -1 else 1
+		for _, dz in { -11.5, 11.5 } do
+			local at = Vector3.new(sx * 31, 0, gate.Z + dz)
+			local face = CFrame.lookAt(at, Vector3.new(at.X, 0, gate.Z)) -- facing the path
+			P(deco, { Name = "BenchSeat", Size = Vector3.new(6, 0.5, 1.8), CFrame = face * CFrame.new(0, 1.6, 0), Color = wood, Material = M.SmoothPlastic })
+			P(deco, { Name = "BenchBack", Size = Vector3.new(6, 1.6, 0.4), CFrame = face * CFrame.new(0, 2.7, 0.8) * CFrame.Angles(-0.2, 0, 0), Color = wood, Material = M.SmoothPlastic })
+			for _, lx in { -2.4, 2.4 } do
+				P(deco, { Name = "BenchLeg", Size = Vector3.new(0.4, 1.4, 1.6), CFrame = face * CFrame.new(lx, 0.7, 0), Color = Color3.fromRGB(60, 60, 76), Material = M.SmoothPlastic })
+			end
+		end
+	end
+	-- balloon bunches around the plaza
+	local rng = Random.new(11)
+	for _, spot in { Vector3.new(-16, 0, 16), Vector3.new(16, 0, 16), Vector3.new(-16, 0, -16), Vector3.new(16, 0, -16) } do
+		P(deco, { Name = "BalloonWeight", Size = Vector3.new(1, 0.8, 1), CFrame = CFrame.new(spot + Vector3.new(0, 0.4, 0)), Color = Color3.fromRGB(60, 60, 76), Material = M.SmoothPlastic })
+		for k = 1, 3 do
+			local top = spot + Vector3.new(rng:NextNumber(-1.6, 1.6), 9 + k * 0.9, rng:NextNumber(-1.6, 1.6))
+			local mid = (spot + Vector3.new(0, 0.8, 0) + top) / 2
+			P(deco, { Name = "BalloonString", Size = Vector3.new(0.08, 0.08, (top - spot).Magnitude), CFrame = CFrame.lookAt(mid, top), Color = WHITE_STRING, Material = M.SmoothPlastic, CanCollide = false, CastShadow = false })
+			P(deco, { Name = "Balloon", Shape = BALL, Size = Vector3.new(2.4, 2.4, 2.4), CFrame = CFrame.new(top + Vector3.new(0, 1.1, 0)), Color = Color3.fromHSV(rng:NextNumber(), 0.7, 1), Material = M.SmoothPlastic, Reflectance = 0.1, CanCollide = false })
+		end
+	end
+	-- banners on the arena walls
+	local colors = { Color3.fromRGB(235, 60, 70), Color3.fromRGB(255, 200, 50), Color3.fromRGB(70, 150, 255), Color3.fromRGB(80, 200, 100), Color3.fromRGB(170, 90, 240) }
+	local hx, hz = Layout.ARENA_HALF_X, Layout.ARENA_HALF_Z
+	local n = 0
+	local function banner(cf: CFrame)
+		n += 1
+		local c = colors[(n - 1) % #colors + 1]
+		P(deco, { Name = "BannerRod", Size = Vector3.new(8, 0.5, 0.5), CFrame = cf * CFrame.new(0, 8.3, 0), Color = Color3.fromRGB(70, 70, 86), Material = M.SmoothPlastic, CanCollide = false })
+		P(deco, { Name = "Banner", Size = Vector3.new(7, 16, 0.25), CFrame = cf, Color = c, Material = M.SmoothPlastic, CanCollide = false, CastShadow = false })
+		P(deco, { Name = "BannerTrim", Size = Vector3.new(7, 1.2, 0.3), CFrame = cf * CFrame.new(0, -7.4, 0), Color = c:Lerp(Color3.new(0, 0, 0), 0.3), Material = M.SmoothPlastic, CanCollide = false, CastShadow = false })
+		P(deco, { Name = "BannerEmblem", Shape = CYL, Size = Vector3.new(0.3, 4.2, 4.2), CFrame = cf * CFrame.new(0, 1.5, -0.1) * CFrame.Angles(0, math.rad(90), 0), Color = Color3.fromRGB(255, 255, 255), Material = M.SmoothPlastic, CanCollide = false, CastShadow = false })
+	end
+	for z = -hz + 24, hz - 24, 48 do
+		for _, sx in { -1, 1 } do
+			local at = Vector3.new(sx * (hx - 0.4), 32, z)
+			banner(CFrame.lookAt(at, at + Vector3.new(-sx, 0, 0)))
+		end
+	end
+	for x = -hx + 26, hx - 26, 48 do
+		for _, sz in { -1, 1 } do
+			local at = Vector3.new(x, 34, sz * (hz - 0.4))
+			banner(CFrame.lookAt(at, at + Vector3.new(0, 0, -sz)))
+		end
+	end
+end
+
 function ArenaBuilder.Build(): Folder
 	local arena = folder(Workspace, "Arena")
 	setupLighting()
@@ -416,6 +498,7 @@ function ArenaBuilder.Build(): Folder
 	buildWalls(arena)
 	buildBelt(arena)
 	buildPillar(arena)
+	buildExtraDecor(arena)
 	buildStand(arena, "ShopStand", Layout.SHOP_POS, "SHOP", Color3.fromRGB(60, 160, 255), "🛒", "Shop", "Open Shop")
 	buildStand(arena, "SellStand", Layout.SELL_POS, "SELL", Color3.fromRGB(70, 210, 90), "💰", "Sell", "Sell Tungs")
 

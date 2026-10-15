@@ -41,6 +41,12 @@ return {
 		AdminAbuse = "",
 	} :: { [string]: string },
 
+	-- Text-to-speech voice that says a Tung's name when you pick it up (Roblox AudioTextToSpeech).
+	-- "4" = US female (closest to the TikTok voice). Others: "1" British male, "2" British female,
+	-- "3" US male, "5" US male 2, "6" US female 2, "7" Australian male, "8" Australian female,
+	-- "9"/"10" retro voices, "11" host voice.
+	TtsVoice = "4",
+
 	-- Trading is friends-only, as in the design doc (ignored in Studio so you can test).
 	TradeFriendsOnly = true,
 

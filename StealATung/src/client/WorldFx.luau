@@ -484,6 +484,74 @@ local function parsePair(s: string): (string, string)
 	return id or s, if mut and mut ~= "" then mut else Mutations.NONE
 end
 
+-- Thieves hold the stolen Tung up over their head with both arms (every client
+-- poses the arms locally; the original joint offsets come back when the carry ends).
+local posed: { [Motor6D]: CFrame } = {}
+local function setCarryPose(p: Player, on: boolean)
+	local ch = p.Character
+	if not ch then
+		return
+	end
+	local joints: { { motor: Motor6D?, raise: CFrame } } = {}
+	local rua = ch:FindFirstChild("RightUpperArm")
+	local lua = ch:FindFirstChild("LeftUpperArm")
+	local torso = ch:FindFirstChild("Torso")
+	if rua and lua then -- R15: pitch both arms up and a little forward
+		table.insert(joints, { motor = rua:FindFirstChild("RightShoulder") :: Motor6D?, raise = CFrame.Angles(math.rad(165), 0, math.rad(-12)) })
+		table.insert(joints, { motor = lua:FindFirstChild("LeftShoulder") :: Motor6D?, raise = CFrame.Angles(math.rad(165), 0, math.rad(12)) })
+	elseif torso then -- R6
+		table.insert(joints, { motor = torso:FindFirstChild("Right Shoulder") :: Motor6D?, raise = CFrame.Angles(0, 0, 2.8) })
+		table.insert(joints, { motor = torso:FindFirstChild("Left Shoulder") :: Motor6D?, raise = CFrame.Angles(0, 0, -2.8) })
+	end
+	for _, j in joints do
+		local m = j.motor
+		if m and m:IsA("Motor6D") then
+			if on and not posed[m] then
+				posed[m] = m.C0
+				m.C0 = m.C0 * j.raise
+			elseif not on and posed[m] then
+				m.C0 = posed[m]
+				posed[m] = nil
+			end
+		end
+	end
+end
+
+-- The person being robbed sees a big "THIEF" marker over the thief until the carry ends.
+local function markThief(thiefId: number, tungName: string)
+	local thief = Players:GetPlayerByUserId(thiefId)
+	local head = thief and thief.Character and thief.Character:FindFirstChild("Head")
+	if not thief or not head then
+		return
+	end
+	local old = head:FindFirstChild("ThiefMarker")
+	if old then
+		old:Destroy()
+	end
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "ThiefMarker"
+	bb.Size = UDim2.fromOffset(220, 70)
+	bb.StudsOffset = Vector3.new(0, 5.5, 0)
+	bb.AlwaysOnTop = true
+	bb.LightInfluence = 0
+	bb.MaxDistance = 2000
+	local l = Lib.label({ Text = "🚨 THIEF 🚨", Font = Lib.FontTitle, Size = UDim2.new(1, 0, 0.6, 0), TextColor3 = Color3.fromRGB(255, 70, 70), Parent = bb })
+	Lib.label({ Text = "has your " .. tungName, Size = UDim2.new(1, 0, 0.4, 0), Position = UDim2.fromScale(0, 0.6), Parent = bb })
+	bb.Parent = head
+	task.spawn(function()
+		local t0 = os.clock()
+		while bb.Parent and os.clock() - t0 < 90 do
+			l.TextTransparency = (math.sin(os.clock() * 8) + 1) * 0.2
+			local c = thief:GetAttribute("Carrying")
+			if c == nil or c == "" then
+				break
+			end
+			task.wait(0.05)
+		end
+		bb:Destroy()
+	end)
+end
+
 local function refreshCarrier(p: Player)
 	local c = carriers[p]
 	if not c then
@@ -515,6 +583,7 @@ local function refreshCarrier(p: Player)
 	end
 	if carrying ~= carrier.carrying then
 		carrier.carrying = carrying
+		setCarryPose(p, carrying ~= "")
 		if carrier.carried then
 			carrier.carried:Destroy()
 			carrier.carried = nil
@@ -1189,6 +1258,10 @@ function WorldFx.Init()
 
 	-- Remote effects
 	Remotes.Event("WalkHome").OnClientEvent:Connect(walkHome)
+	Remotes.Event("StealAlert").OnClientEvent:Connect(function(d)
+		local t = Tungs.Get(d.tung)
+		markThief(d.thief, Mutations.Prefix(d.mut) .. (if t then t.name else "Tung"))
+	end)
 	Remotes.Event("PlaceFx").OnClientEvent:Connect(function(d)
 		local t = Tungs.Get(d.tung)
 		if not t then
@@ -1212,7 +1285,31 @@ function WorldFx.Init()
 		end
 		State.Fire("CollectPop", total)
 	end)
+	-- Tung Tung's Bat hit you: tumble through the air for a moment
+	Remotes.Event("Flung").OnClientEvent:Connect(function(seconds: number)
+		local ch = player.Character
+		local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+		if hum then
+			hum.PlatformStand = true
+			task.delay(math.clamp(seconds, 0.2, 3), function()
+				if hum.Parent then
+					hum.PlatformStand = false
+					hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+				end
+			end)
+		end
+	end)
 	Remotes.Event("BonkFx").OnClientEvent:Connect(function(d)
+		if d.fling then
+			-- WHAM: a big burst of stars and a shake for anyone close
+			stars(d.pos, Color3.fromRGB(255, 230, 80))
+			stars(d.pos + Vector3.new(0, 1, 0), Color3.fromRGB(255, 80, 60))
+			Lib.sound3D("Bonk", d.pos, 0.7, 0.45)
+			if near(d.pos, 30) then
+				WorldFx.Shake(0.6, 0.35)
+			end
+			return
+		end
 		if d.slip then
 			Lib.sound3D("Slip", d.pos)
 			stars(d.pos, Color3.fromRGB(255, 230, 80))

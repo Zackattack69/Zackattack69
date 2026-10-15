@@ -46,7 +46,7 @@ function HUD.Build(gui: ScreenGui, panels: any)
 	topGui.Parent = gui.Parent
 	local top = Lib.new("Frame", { Name = "Top", Size = UDim2.fromOffset(420, 96), Position = UDim2.new(0.5, 0, 0, 2), AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, Parent = topGui })
 	Lib.hudFit(top)
-	local moneyPill = Lib.new("Frame", { Name = "Money", Size = UDim2.fromOffset(340, 84), Position = UDim2.new(0.5, 22, 0, 4), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = Color3.fromRGB(22, 18, 48), BackgroundTransparency = 0.25, Parent = top })
+	local moneyPill = Lib.new("Frame", { Name = "Money", Size = UDim2.fromOffset(340, 84), Position = UDim2.new(0.5, 22, 0, 4), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = C.Panel, BackgroundTransparency = 0.08, Parent = top })
 	Lib.round(moneyPill)
 	local moneyStroke = Lib.stroke(moneyPill, C.Outline, 4)
 	local glow = Lib.new("UIStroke", { Name = "Glow", Color = C.Money, Thickness = 0, Transparency = 0.15, Parent = Lib.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = moneyPill }) })
