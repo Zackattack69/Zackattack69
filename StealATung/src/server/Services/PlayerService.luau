@@ -180,6 +180,15 @@ function PlayerService.EquipBat(player: Player): Tool?
 end
 
 -- Overhead tag, aura cosmetic, rebirth trail ------------------------------------------------------------
+local RAINBOW_TRAIL = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 70, 70)),
+	ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255, 170, 40)),
+	ColorSequenceKeypoint.new(0.4, Color3.fromRGB(255, 240, 60)),
+	ColorSequenceKeypoint.new(0.6, Color3.fromRGB(70, 230, 100)),
+	ColorSequenceKeypoint.new(0.8, Color3.fromRGB(60, 160, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(170, 90, 255)),
+})
+
 local function refreshAppearance(player: Player)
 	local c = player.Character
 	local data = dataOf(player)
@@ -260,9 +269,13 @@ local function refreshAppearance(player: Player)
 			}) else ColorSequence.new(m.color)
 			e.Parent = hrp
 		end
-		-- Rebirth 5 perk: cosmetic trail
-		local oldTrail = hrp:FindFirstChild("RebirthTrail")
-		if data.rebirths >= 5 and not oldTrail then
+		-- Rebirth 5 perk / Rainbow Trail pass: cosmetic trail
+		local rainbowPass = Economy.HasPass(data, "RainbowTrail")
+		local oldTrail = hrp:FindFirstChild("RebirthTrail") :: Trail?
+		if oldTrail and rainbowPass then
+			oldTrail.Color = RAINBOW_TRAIL
+		end
+		if (data.rebirths >= 5 or rainbowPass) and not oldTrail then
 			local a0 = Instance.new("Attachment")
 			a0.Name = "TrailTop"
 			a0.Position = Vector3.new(0, 0.8, 0)
@@ -277,7 +290,7 @@ local function refreshAppearance(player: Player)
 			trail.Attachment1 = a1
 			trail.Lifetime = 0.5
 			trail.LightEmission = 0.7
-			trail.Color = ColorSequence.new(Color3.fromRGB(255, 220, 80), Color3.fromRGB(255, 90, 200))
+			trail.Color = if rainbowPass then RAINBOW_TRAIL else ColorSequence.new(Color3.fromRGB(255, 220, 80), Color3.fromRGB(255, 90, 200))
 			trail.Transparency = NumberSequence.new(0.2, 1)
 			trail.Parent = hrp
 		end

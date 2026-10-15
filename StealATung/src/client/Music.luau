@@ -52,7 +52,7 @@ local MOODS: { [string]: Mood } = {
 	AdminAbuse = { speed = 1.12, low = 6, mid = 1, high = 2, reverb = 0.1, chorus = 0.2, tremolo = 0, volume = 1.15 },
 }
 
-local BASE_VOLUME = 0.5
+local BASE_VOLUME = 0.7
 local FADE = TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 local BLEND = TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 
@@ -176,7 +176,9 @@ local function adminHint(text: string)
 end
 
 local loadToken = 0
-local function setTheme(id: string)
+local function setTheme(raw: string)
+	-- accept a bare number too ("123456" -> "rbxassetid://123456")
+	local id = if string.match(raw, "^%d+$") then "rbxassetid://" .. raw else raw
 	local s = theme
 	if not s then
 		return

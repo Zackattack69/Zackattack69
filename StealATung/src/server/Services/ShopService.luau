@@ -1,14 +1,20 @@
 --!strict
--- Robux purchases: Game Passes + Developer Products (ProcessReceipt), plus the
--- Roblox group reward (free Group Tung).
+-- Robux purchases: Game Passes + Developer Products (ProcessReceipt), eggs
+-- that hatch into Tungs, plus the Roblox group reward (free Group Tung).
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
+local PolicyService = game:GetService("PolicyService")
+local RunService = game:GetService("RunService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local Eggs = require(Shared.Config.Eggs)
+local Format = require(Shared.Util.Format)
 local GameConfig = require(Shared.Config.GameConfig)
 local Mutations = require(Shared.Config.Mutations)
 local Products = require(Shared.Config.Products)
+local Remotes = require(Shared.Remotes)
+local Tungs = require(Shared.Config.Tungs)
 
 local Bus = require(script.Parent.Parent.Bus)
 local BeltService = require(script.Parent.BeltService)
@@ -17,6 +23,23 @@ local EconomyService = require(script.Parent.EconomyService)
 local EventService = require(script.Parent.EventService)
 
 local ShopService = {}
+local rng = Random.new()
+
+-- Hatches an egg: rolls the Tung, puts it in the base (or the waiting queue
+-- when the base is full) and plays the hatch animation for the buyer.
+function ShopService.Hatch(player: Player, egg: Eggs.Egg): string
+	local id, mut = Eggs.Roll(egg, rng)
+	Bus.Fire("GrantTung", player, id, mut, "egg")
+	Remotes.Event("Hatch"):FireClient(player, { egg = egg.key, tung = id, mut = mut })
+	local t = Tungs.Get(id)
+	return Mutations.Prefix(mut) .. (if t then t.name else "Tung")
+end
+
+local function cashPack(player: Player, data: any, seconds: number, minimum: number): string
+	local amount = math.max(minimum, math.floor(EconomyService.Income(player, data) * seconds))
+	EconomyService.AddMoney(player, amount)
+	return Format.Money(amount)
+end
 
 -- One-time side effects of owning a pass.
 local function onPassOwned(player: Player, key: string)
@@ -50,7 +73,23 @@ local GRANTS: { [string]: (Player, any) -> string } = {
 		data.tokens.SkipRebirth = (data.tokens.SkipRebirth or 0) + 1
 		return "a Skip Rebirth token (use it at your Rebirth Altar)"
 	end,
+	CashSmall = function(player, data)
+		return cashPack(player, data, 30 * 60, 5000) .. "!"
+	end,
+	CashBig = function(player, data)
+		return cashPack(player, data, 3 * 3600, 50000) .. "!"
+	end,
+	BaseShield = function(_, data)
+		-- BaseService uses the token on its next tick (or right after Thief Night)
+		data.tokens.Shield = (data.tokens.Shield or 0) + 1
+		return "a Base Shield (5-minute lock)"
+	end,
 }
+for _, egg in Eggs.List do
+	GRANTS[egg.product] = function(player, _)
+		return "a " .. egg.name .. ". It hatched " .. ShopService.Hatch(player, egg) .. "!"
+	end
+end
 
 local function processReceipt(info: any): Enum.ProductPurchaseDecision
 	local player = Players:GetPlayerByUserId(info.PlayerId)
@@ -147,6 +186,20 @@ function ShopService.Init()
 			end
 		end
 	end)
+
+	-- Paid random items (eggs) are hidden for players whose country doesn't allow them.
+	local function checkPolicy(player: Player)
+		local ok, info = pcall(function()
+			return PolicyService:GetPolicyInfoForPlayerAsync(player)
+		end)
+		-- if Roblox can't tell us, play it safe and hide them (except in Studio, for testing)
+		local restricted = if ok and info then (info :: any).ArePaidRandomItemsRestricted == true else not RunService:IsStudio()
+		player:SetAttribute("NoPaidRandom", restricted)
+	end
+	Players.PlayerAdded:Connect(checkPolicy)
+	for _, player in Players:GetPlayers() do
+		task.spawn(checkPolicy, player)
+	end
 
 	DataService.OnLoaded(function(profile)
 		local player = profile.player

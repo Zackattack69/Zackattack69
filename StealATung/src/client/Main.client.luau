@@ -26,6 +26,7 @@ local TradePanel = require(UI.TradePanel)
 local SellPanel = require(UI.SellPanel)
 local AdminPanel = require(UI.AdminPanel)
 local SkinsPanel = require(UI.SkinsPanel)
+local Hatch = require(UI.Hatch)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -49,23 +50,48 @@ local fxGui = screen("TungFx", 10)
 State.Init()
 Lib.SetPanelRoot(panelGui)
 
-local panels: { [string]: any } = {}
-panels.Index = IndexPanel.Build()
-panels.Shop = ShopPanel.Build()
-panels.Rebirth = RebirthPanel.Build()
-panels.Settings = SettingsPanel.Build()
-panels.Quests = QuestsPanel.Build()
-panels.Trade = TradePanel.Build(fxGui)
-panels.Sell = SellPanel.Build()
-panels.Admin = AdminPanel.Build()
-panels.Skins = SkinsPanel.Build()
+-- Start each part on its own, so if one ever breaks the rest (music included) still runs.
+local function safe(name: string, fn: () -> ())
+	local ok, err = pcall(fn :: any)
+	if not ok then
+		warn("[Client] " .. name .. " failed to start:", err)
+	end
+end
 
-HUD.Build(hudGui, panels)
-Effects.Init(fxGui)
-PromptUI.Init(hudGui)
-Belt.Init()
-WorldFx.Init()
-Music.Init()
+safe("Music", Music.Init) -- first, so the theme plays no matter what
+
+local panels: { [string]: any } = {}
+local function panel(name: string, build: () -> any)
+	safe(name, function()
+		panels[name] = build()
+	end)
+end
+panel("Index", IndexPanel.Build)
+panel("Shop", ShopPanel.Build)
+panel("Rebirth", RebirthPanel.Build)
+panel("Settings", SettingsPanel.Build)
+panel("Quests", QuestsPanel.Build)
+panel("Trade", function()
+	return TradePanel.Build(fxGui)
+end)
+panel("Sell", SellPanel.Build)
+panel("Admin", AdminPanel.Build)
+panel("Skins", SkinsPanel.Build)
+
+safe("HUD", function()
+	HUD.Build(hudGui, panels)
+end)
+safe("Effects", function()
+	Effects.Init(fxGui)
+end)
+safe("Hatch", function()
+	Hatch.Init(fxGui)
+end)
+safe("PromptUI", function()
+	PromptUI.Init(hudGui)
+end)
+safe("Belt", Belt.Init)
+safe("WorldFx", WorldFx.Init)
 
 -- World prompts (shop / sell stands, rebirth altar) open panels
 Remotes.Event("OpenUI").OnClientEvent:Connect(function(which: string)
@@ -97,7 +123,7 @@ end
 task.spawn(function()
 	local d = State.WaitForData()
 	State.Fire("Toast", "👋 Welcome to Steal a Tung! Buy Tungs from the belt and bring them home.", "info")
-	if d.loginCanClaim then
+	if d.loginCanClaim and panels.Quests then
 		task.wait(2.5)
 		panels.Quests.open()
 	end

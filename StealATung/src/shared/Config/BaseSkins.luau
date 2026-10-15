@@ -27,6 +27,7 @@ export type Skin = {
 	rarity: string?, -- Rarity styles: collect `need` Tungs of this rarity
 	need: number?,
 	index: boolean?, -- Tung Master: 100% Index
+	pass: string?, -- unlocked by owning this game pass
 	desc: string?,
 }
 
@@ -63,6 +64,7 @@ BaseSkins.List = {
 	{ key = "MythicStyle", name = "Mythic", kind = "Rarity", rarity = "Mythic", need = 1, wall = rgb(110, 20, 24), frame = rgb(255, 120, 30), trim = rgb(255, 90, 20), trimMaterial = M.Neon, glass = rgb(255, 140, 80), floor = rgb(60, 30, 30), tile = rgb(48, 22, 22), pad = rgb(150, 90, 80), accent = rgb(255, 80, 30), roof = rgb(70, 14, 18), decor = "Inferno", desc = "Volcanic fortress with horns and flames" },
 
 	-- Special --------------------------------------------------------------------------------------------------------------
+	{ key = "Diamond", name = "Diamond", kind = "Special", pass = "DiamondBase", wall = rgb(170, 225, 255), wallMaterial = M.Glass, frame = rgb(240, 250, 255), trim = rgb(120, 220, 255), trimMaterial = M.Neon, glass = rgb(220, 245, 255), floor = rgb(225, 240, 252), tile = rgb(200, 228, 248), pad = rgb(240, 250, 255), accent = rgb(110, 210, 255), roof = rgb(140, 210, 255), decor = "Crystals", desc = "Sparkling diamond (Diamond Base pass)" },
 	{ key = "TungMaster", name = "Tung Master", kind = "Special", index = true, wall = rgb(248, 244, 232), wallMaterial = M.Marble, frame = rgb(255, 200, 50), trim = rgb(255, 200, 50), trimMaterial = M.Foil, glass = rgb(255, 236, 180), floor = rgb(240, 232, 214), tile = rgb(226, 214, 190), pad = rgb(255, 248, 230), accent = rgb(255, 200, 50), roof = rgb(255, 200, 50), decor = "Temple", desc = "Golden temple for finishing the Index" },
 } :: { Skin }
 
@@ -88,6 +90,9 @@ function BaseSkins.Unlocked(data: any, skin: Skin): (boolean, string)
 	elseif skin.rarity and skin.need then
 		local have = BaseSkins.Collected(data, skin.rarity)
 		return have >= skin.need, "Collect " .. skin.need .. " " .. skin.rarity .. " Tung" .. (if skin.need == 1 then "" else "s") .. " (" .. math.min(have, skin.need) .. "/" .. skin.need .. ")"
+	elseif skin.pass then
+		local owned = data.passes ~= nil and data.passes[skin.pass] == true
+		return owned, "Get the Diamond Base pass in the Shop"
 	elseif skin.index then
 		local done = data.indexRewards ~= nil and data.indexRewards.Master == true
 		return done, "Complete the whole Index"

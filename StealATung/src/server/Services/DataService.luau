@@ -66,7 +66,7 @@ local function defaultData(): any
 		collected = {}, -- [rarity] = Tungs of that rarity ever collected (unlocks rarity base styles)
 		items = { Bat = 1, SpeedCoil = false, Banana = false, Honey = false, Alarm = false },
 		boosts = { Money2x = 0, Luck2x = 0 }, -- unix time the boost ends
-		tokens = { SkipRebirth = 0 },
+		tokens = { SkipRebirth = 0, Shield = 0 },
 		passes = {},
 		stats = { steals = 0, stolen = 0, bought = 0, sold = 0, collected = 0, bonks = 0 },
 		playtime = 0,

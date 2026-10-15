@@ -1050,6 +1050,16 @@ local function incomeTick()
 		if not st.locked and t >= st.lockReady and Economy.HasPass(data, "AutoLock") and Workspace:GetAttribute("Event") ~= "ThiefNight" then
 			BaseService.Lock(owner)
 		end
+		-- Base Shield (Robux): a 5-minute lock that ignores the cooldown (not during Thief Night)
+		if (data.tokens.Shield or 0) > 0 and not st.locked and Workspace:GetAttribute("Event") ~= "ThiefNight" then
+			data.tokens.Shield -= 1
+			st.locked = true
+			st.lockEnds = t + Economy.SHIELD_DURATION
+			st.lockReady = math.max(st.lockReady, st.lockEnds)
+			setLasers(st)
+			EconomyService.Notify(owner, "🔰 Base Shield is on: your base is locked for 5 minutes!", "success")
+			DataService.MarkDirty(owner, true)
+		end
 		refreshHeadline(st)
 		local shieldLeft = Economy.SHIELD_SECONDS - data.playtime
 		owner:SetAttribute("Shielded", shieldLeft > 0)
@@ -1180,7 +1190,7 @@ function BaseService.Init()
 	Bus.On("GrantTung", function(player: Player, id: string, mut: string?, source: string?)
 		local slot = BaseService.AddTung(player, id, mut, { source = source })
 		local t = Tungs.Get(id)
-		if t and slot then
+		if t and slot and source ~= "egg" then -- eggs show their own hatch animation
 			EconomyService.Notify(player, "🎁 " .. Mutations.Prefix(mut) .. t.name .. " was added to your base! (" .. (source or "gift") .. ")", "success")
 		end
 	end)

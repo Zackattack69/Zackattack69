@@ -31,6 +31,8 @@ local BaseService = require(script.Parent.BaseService)
 local BeltService = require(script.Parent.BeltService)
 local EconomyService = require(script.Parent.EconomyService)
 local EventService = require(script.Parent.EventService)
+local ShopService = require(script.Parent.ShopService)
+local Eggs = require(Shared.Config.Eggs)
 
 local AdminService = {}
 
@@ -219,6 +221,20 @@ function AdminService.StartEvent(player: Player, key: any): (boolean, any)
 		return false, "Unknown event"
 	end
 	EventService.Start(e.key, if e.key == "AdminAbuse" then 30 * 60 else nil)
+	return true, nil
+end
+
+-- Free test hatch for admins (so eggs can be tried before the Robux products exist).
+function AdminService.TestEgg(player: Player, key: any): (boolean, any)
+	local ok, why = allowed(player)
+	if not ok then
+		return false, why
+	end
+	local egg = Eggs.ByKey[tostring(key)]
+	if not egg then
+		return false, "Unknown egg"
+	end
+	ShopService.Hatch(player, egg)
 	return true, nil
 end
 

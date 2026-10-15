@@ -99,8 +99,11 @@ function Economy.CanCollectAll(data: any): boolean
 end
 
 function Economy.LockDuration(data: any): number
-	return if data.rebirths >= 3 then Economy.LOCK_DURATION_PERK else Economy.LOCK_DURATION
+	local base = if data.rebirths >= 3 then Economy.LOCK_DURATION_PERK else Economy.LOCK_DURATION
+	return if Economy.HasPass(data, "LockMaster") then base * 2 else base
 end
+
+Economy.SHIELD_DURATION = 300 -- Base Shield (Robux): a 5-minute lock
 
 function Economy.WalkSpeed(data: any): number
 	local s = Economy.BASE_WALKSPEED

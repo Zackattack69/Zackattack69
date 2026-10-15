@@ -1,17 +1,21 @@
 --!strict
 -- Shop: Items (bat upgrades, speed coil, traps) | Boosts (2x money, luck
--- potions; some Robux products) | Game Passes.
+-- potions) | Eggs (Robux eggs that hatch into Tungs, odds shown on each) |
+-- Robux (potions, cash packs, shields...) | Game Passes.
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Economy = require(Shared.Config.Economy)
+local Eggs = require(Shared.Config.Eggs)
+local Rarities = require(Shared.Config.Rarities)
 local Items = require(Shared.Config.Items)
 local Products = require(Shared.Config.Products)
 local Format = require(Shared.Util.Format)
 
 local State = require(script.Parent.Parent.State)
+local Hatch = require(script.Parent.Hatch)
 local Lib = require(script.Parent.Lib)
 
 local C = Lib.Colors
@@ -130,6 +134,79 @@ function ShopPanel.Build(): any
 					order = 1 + i,
 				})
 			end
+		elseif current == "Eggs" then
+			for _, c in content:GetChildren() do
+				if c:IsA("UIGridLayout") then
+					c.CellSize = UDim2.fromOffset(220, 340)
+				end
+			end
+			local player = Players.LocalPlayer
+			local blocked = player:GetAttribute("NoPaidRandom") == true
+			for i, egg in Eggs.List do
+				local p = Products.ByKey[egg.product]
+				local f = Lib.card(content, { Size = UDim2.fromOffset(220, 340), LayoutOrder = i })
+				local art = Lib.new("Frame", { Size = UDim2.new(1, -16, 0, 112), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = Color3.new(1, 1, 1), Parent = f })
+				Lib.corner(art, 14)
+				Lib.gradient(art, egg.color:Lerp(Color3.new(1, 1, 1), 0.55), egg.color:Lerp(Color3.new(1, 1, 1), 0.2), 90)
+				Hatch.EggShape(art, egg, 96)
+				Lib.label({ Text = egg.name, Size = UDim2.new(1, -16, 0, 26), Position = UDim2.fromOffset(8, 124), Dark = true, Parent = f })
+				-- the odds, one colourful line per rarity (shown before buying)
+				local odds = Lib.new("Frame", { Size = UDim2.new(1, -16, 0, 116), Position = UDim2.fromOffset(8, 152), BackgroundTransparency = 1, Parent = f })
+				Lib.list(odds, 0, false, Enum.HorizontalAlignment.Center)
+				for k, o in egg.odds do
+					local l = Lib.label({ Text = o.rarity .. "  " .. o.chance .. "%", Size = UDim2.new(1, 0, 0, 19), LayoutOrder = k, TextColor3 = Rarities.Get(o.rarity).color, Parent = odds })
+					local _ = l
+				end
+				local muts = egg.mutations
+				if muts then
+					local parts = {}
+					for _, m in muts do
+						table.insert(parts, m.key .. " " .. m.chance .. "%")
+					end
+					Lib.label({ Text = "Mutation: " .. table.concat(parts, ", "), Size = UDim2.new(1, 0, 0, 17), LayoutOrder = 9, Dark = true, TextColor3 = C.SubText, Parent = odds })
+				end
+				local admin = player:GetAttribute("IsAdmin") == true
+				local text, enabled = Lib.ROBUX .. " " .. p.price, true
+				if blocked then
+					text, enabled = "Not available here", false
+				elseif p.assetId == 0 then
+					text, enabled = if admin then "Test hatch (admin)" else "Coming soon", admin
+				end
+				Lib.button({
+					Text = text,
+					Size = UDim2.new(1, -16, 0, 52),
+					Position = UDim2.new(0, 8, 1, -60),
+					Color = if enabled then C.Robux else C.Grey,
+					Parent = f,
+					OnClick = function()
+						if not enabled then
+							return
+						end
+						if p.assetId == 0 then
+							State.Request("AdminEgg", egg.key)
+						else
+							promptRobux(p)
+						end
+					end,
+				})
+			end
+		elseif current == "Robux" then
+			for i, key in { "LuckPotion", "InstantTung", "CashSmall", "CashBig", "BaseShield", "SkipRebirth" } do
+				local p = Products.ByKey[key]
+				card(content, {
+					icon = p.icon,
+					name = p.name,
+					desc = p.description,
+					button = if p.assetId == 0 then "Coming soon" else Lib.ROBUX .. " " .. p.price,
+					color = C.Purple,
+					buttonColor = C.Robux,
+					enabled = p.assetId ~= 0,
+					onClick = function()
+						promptRobux(p)
+					end,
+					order = i,
+				})
+			end
 		elseif current == "Boosts" then
 			for i, b in Items.Boosts do
 				local price = Items.BoostPrice(b, d.income or 0)
@@ -145,22 +222,6 @@ function ShopPanel.Build(): any
 						buy(b.key)
 					end,
 					order = i,
-				})
-			end
-			for i, key in { "LuckPotion", "InstantTung", "SkipRebirth" } do
-				local p = Products.ByKey[key]
-				card(content, {
-					icon = p.icon,
-					name = p.name,
-					desc = p.description,
-					button = if p.assetId == 0 then "Coming soon" else Lib.ROBUX .. " " .. p.price,
-					color = C.Purple,
-					buttonColor = C.Robux,
-					enabled = p.assetId ~= 0,
-					onClick = function()
-						promptRobux(p)
-					end,
-					order = 10 + i,
 				})
 			end
 		else
@@ -183,10 +244,10 @@ function ShopPanel.Build(): any
 		end
 	end
 
-	local select = Lib.tabs(tabHolder, { "Items", "Boosts", "Game Passes" }, 46, function(name)
+	local select = Lib.tabs(tabHolder, { "Items", "Boosts", "Eggs", "Robux", "Game Passes" }, 46, function(name)
 		current = name
 		render()
-	end, { Items = C.Wood, Boosts = C.Green, ["Game Passes"] = C.Gold })
+	end, { Items = C.Wood, Boosts = C.Green, Eggs = C.Pink, Robux = C.Purple, ["Game Passes"] = C.Gold })
 
 	win.onOpen = function()
 		select(current)
