@@ -38,14 +38,26 @@ Products.List = {
 	{ key = "LuckPotion", name = "Server Luck Potion", kind = "Product", price = 49, assetId = 0, icon = "🧪", description = "3x luck for the WHOLE server for 10 minutes. Everyone will thank you!" },
 	{ key = "InstantTung", name = "Instant Tung", kind = "Product", price = 99, assetId = 0, icon = "⚡", description = "A random Legendary Tung rides the belt just for you, and it's free to grab." },
 	{ key = "SkipRebirth", name = "Skip Rebirth Cost", kind = "Product", price = 149, assetId = 0, icon = "⏩", description = "Rebirth once without paying the money cost (you still need the required Tungs)." },
-	{ key = "CashSmall", name = "Bag of Cash", kind = "Product", price = 25, assetId = 0, icon = "💵", description = "Instantly get 30 minutes of your income (at least $5K)." },
-	{ key = "CashBig", name = "Vault of Cash", kind = "Product", price = 99, assetId = 0, icon = "🏦", description = "Instantly get 3 hours of your income (at least $50K)." },
+	-- Cash packs: the amount grows with how much money you have (Economy.CashPackAmount)
+	{ key = "Cash1", name = "Stack of Cash", kind = "Product", price = 49, assetId = 0, icon = "💵", description = "A stack of cash." },
+	{ key = "Cash2", name = "Pile of Cash", kind = "Product", price = 99, assetId = 0, icon = "💵", description = "A big pile of cash." },
+	{ key = "Cash3", name = "Mountain of Cash", kind = "Product", price = 249, assetId = 0, icon = "💰", description = "A mountain of cash." },
+	{ key = "Cash4", name = "Bag of Cash", kind = "Product", price = 499, assetId = 0, icon = "💰", description = "A huge bag of cash." },
+	{ key = "Cash5", name = "Vault of Cash", kind = "Product", price = 799, assetId = 0, icon = "🏦", description = "A whole vault of cash." },
 	{ key = "BaseShield", name = "Base Shield", kind = "Product", price = 79, assetId = 0, icon = "🔰", description = "Locks your base for 5 minutes, even on cooldown. (Waits until Thief Night is over.)" },
-	-- Eggs (Developer Products; odds in Config/Eggs)
-	{ key = "EggTung", name = "Tung Egg", kind = "Product", price = 49, assetId = 0, icon = "🥚", description = "Hatches a random Tung.", shop = "Eggs" },
-	{ key = "EggGolden", name = "Golden Egg", kind = "Product", price = 149, assetId = 0, icon = "🥚", description = "Hatches a Rare or better.", shop = "Eggs" },
-	{ key = "EggRainbow", name = "Rainbow Egg", kind = "Product", price = 249, assetId = 0, icon = "🥚", description = "Always a mutated Tung.", shop = "Eggs" },
-	{ key = "EggMoon", name = "Sahur Moon Egg", kind = "Product", price = 399, assetId = 0, icon = "🥚", description = "Epic or better every time.", shop = "Eggs" },
+	-- Eggs: 1 / 3 / 10 of each (Developer Products; contents and odds in Config/Eggs)
+	{ key = "EggTung1", name = "Tung Egg", kind = "Product", price = 49, assetId = 0, icon = "🥚", description = "1 Tung Egg", shop = "Eggs" },
+	{ key = "EggTung3", name = "Tung Egg x3", kind = "Product", price = 129, assetId = 0, icon = "🥚", description = "3 Tung Eggs", shop = "Eggs" },
+	{ key = "EggTung10", name = "Tung Egg x10", kind = "Product", price = 399, assetId = 0, icon = "🥚", description = "10 Tung Eggs", shop = "Eggs" },
+	{ key = "EggGolden1", name = "Golden Egg", kind = "Product", price = 149, assetId = 0, icon = "🥚", description = "1 Golden Egg", shop = "Eggs" },
+	{ key = "EggGolden3", name = "Golden Egg x3", kind = "Product", price = 399, assetId = 0, icon = "🥚", description = "3 Golden Eggs", shop = "Eggs" },
+	{ key = "EggGolden10", name = "Golden Egg x10", kind = "Product", price = 1199, assetId = 0, icon = "🥚", description = "10 Golden Eggs", shop = "Eggs" },
+	{ key = "EggRainbow1", name = "Rainbow Egg", kind = "Product", price = 249, assetId = 0, icon = "🥚", description = "1 Rainbow Egg", shop = "Eggs" },
+	{ key = "EggRainbow3", name = "Rainbow Egg x3", kind = "Product", price = 649, assetId = 0, icon = "🥚", description = "3 Rainbow Eggs", shop = "Eggs" },
+	{ key = "EggRainbow10", name = "Rainbow Egg x10", kind = "Product", price = 1999, assetId = 0, icon = "🥚", description = "10 Rainbow Eggs", shop = "Eggs" },
+	{ key = "EggMoon1", name = "Sahur Moon Egg", kind = "Product", price = 399, assetId = 0, icon = "🥚", description = "1 Sahur Moon Egg", shop = "Eggs" },
+	{ key = "EggMoon3", name = "Sahur Moon Egg x3", kind = "Product", price = 1099, assetId = 0, icon = "🥚", description = "3 Sahur Moon Eggs", shop = "Eggs" },
+	{ key = "EggMoon10", name = "Sahur Moon Egg x10", kind = "Product", price = 3299, assetId = 0, icon = "🥚", description = "10 Sahur Moon Eggs", shop = "Eggs" },
 } :: { Product }
 
 Products.ByKey = {} :: { [string]: Product }

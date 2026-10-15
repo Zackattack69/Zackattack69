@@ -56,15 +56,18 @@ local gui: ScreenGui
 
 local function play(d: any)
 	local egg = Eggs.ByKey[d.egg]
-	local t = Tungs.Get(d.tung)
+	local results: { any } = d.results or { { tung = d.tung, mut = d.mut } }
+	local first = results[1]
+	local t = first and Tungs.Get(first.tung)
 	if not egg or not t then
 		return
 	end
+	local many = #results > 1
 	local overlay = Lib.new("TextButton", { Name = "Hatch", Text = "", AutoButtonColor = false, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(10, 8, 24), BackgroundTransparency = 1, ZIndex = 80, Parent = gui })
 	Lib.tween(overlay, 0.3, { BackgroundTransparency = 0.4 })
 	local holder = Lib.new("Frame", { Size = UDim2.fromOffset(420, 470), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, Parent = overlay })
 	Lib.new("UIScale", { Scale = Lib.HudScale(), Parent = holder })
-	local title = Lib.title({ Text = egg.name, Size = UDim2.new(1, 0, 0, 48), Parent = holder })
+	local title = Lib.title({ Text = if many then #results .. " " .. egg.name .. "s" else egg.name, Size = UDim2.new(1, 0, 0, 48), Parent = holder })
 	local stage = Lib.new("Frame", { Size = UDim2.fromOffset(260, 270), Position = UDim2.new(0.5, 0, 0, 60), AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, Parent = holder })
 
 	-- bounce in, then wobble harder and harder
@@ -87,23 +90,6 @@ local function play(d: any)
 	end)
 	e:Destroy()
 
-	-- reveal
-	local special = Rarities.Order(t.rarity) >= Rarities.Order("Legendary") or d.mut ~= Mutations.NONE
-	if special then
-		Lib.rays(stage, Tungs.Color(t):Lerp(WHITE, 0.4), 460, 12, 0)
-		Lib.sound("Jackpot")
-	else
-		Lib.sound("Purchase")
-	end
-	local vp = Lib.tungViewport(stage, t.id, d.mut, UDim2.fromScale(1, 1), UDim2.new(), true)
-	local pop = Lib.new("UIScale", { Scale = 0.3, Parent = vp })
-	Lib.tween(pop, 0.5, { Scale = 1 }, Enum.EasingStyle.Back)
-	Lib.sparkles(stage, 8, Color3.fromRGB(255, 255, 180))
-	title.Text = Mutations.Prefix(d.mut) .. t.name
-	local r = Lib.label({ Text = Tungs.RarityLabel(t), Font = Lib.FontTitle, Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 336), Parent = holder })
-	Lib.rarityText(r, t)
-	Lib.label({ Text = "Added to your base!", Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 372), Parent = holder })
-
 	local closed = false
 	local function close()
 		if closed then
@@ -116,6 +102,64 @@ local function play(d: any)
 			overlay:Destroy()
 		end)
 	end
+
+	if many then
+		-- several eggs: every Tung pops into a grid, one after another
+		holder.Size = UDim2.fromOffset(720, 500)
+		stage.Visible = false
+		local grid = Lib.new("Frame", { Size = UDim2.new(1, 0, 0, 340), Position = UDim2.fromOffset(0, 60), BackgroundTransparency = 1, Parent = holder })
+		Lib.new("UIGridLayout", { CellSize = UDim2.fromOffset(128, 160), CellPadding = UDim2.fromOffset(10, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = grid })
+		local best = false
+		for n, res in results do
+			local rt = Tungs.Get(res.tung)
+			if not rt then
+				continue
+			end
+			local tile = Lib.new("Frame", { Size = UDim2.fromOffset(128, 160), BackgroundColor3 = Color3.fromRGB(26, 24, 40), BackgroundTransparency = 0.2, LayoutOrder = n, Parent = grid })
+			Lib.corner(tile, 10)
+			Lib.stroke(tile, Tungs.Color(rt), 3)
+			Lib.tungViewport(tile, rt.id, res.mut, UDim2.new(1, -8, 0, 104), UDim2.fromOffset(4, 2), false)
+			Lib.label({ Text = Mutations.Prefix(res.mut) .. rt.name, Size = UDim2.new(1, -8, 0, 30), Position = UDim2.fromOffset(4, 104), TextWrapped = true, Parent = tile })
+			local rl = Lib.label({ Text = Tungs.RarityLabel(rt), Font = Lib.FontTitle, Size = UDim2.new(1, -8, 0, 20), Position = UDim2.fromOffset(4, 136), Parent = tile })
+			Lib.rarityText(rl, rt)
+			local pop = Lib.new("UIScale", { Scale = 0.2, Parent = tile })
+			Lib.tween(pop, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
+			Lib.sound("Pop", 0.3, 1 + n * 0.04)
+			if Rarities.Order(rt.rarity) >= Rarities.Order("Legendary") or res.mut ~= Mutations.NONE then
+				best = true
+			end
+			task.wait(0.12)
+		end
+		Lib.sound(if best then "Jackpot" else "Purchase")
+		Lib.label({ Text = "All added to your base!", Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 410), Parent = holder })
+		Lib.button({ Text = "Nice!", Size = UDim2.fromOffset(200, 56), Position = UDim2.new(0.5, -100, 0, 442), Color = C.Green, Color2 = C.Green2, Parent = holder, OnClick = close })
+		overlay.Activated:Connect(close)
+		task.delay(10, close)
+		while not closed do
+			task.wait(0.1)
+		end
+		task.wait(0.3)
+		return
+	end
+
+	-- reveal
+	local d1 = first
+	local special = Rarities.Order(t.rarity) >= Rarities.Order("Legendary") or d1.mut ~= Mutations.NONE
+	if special then
+		Lib.rays(stage, Tungs.Color(t):Lerp(WHITE, 0.4), 460, 12, 0)
+		Lib.sound("Jackpot")
+	else
+		Lib.sound("Purchase")
+	end
+	local vp = Lib.tungViewport(stage, t.id, d1.mut, UDim2.fromScale(1, 1), UDim2.new(), true)
+	local pop = Lib.new("UIScale", { Scale = 0.3, Parent = vp })
+	Lib.tween(pop, 0.5, { Scale = 1 }, Enum.EasingStyle.Back)
+	Lib.sparkles(stage, 8, Color3.fromRGB(255, 255, 180))
+	title.Text = Mutations.Prefix(d1.mut) .. t.name
+	local r = Lib.label({ Text = Tungs.RarityLabel(t), Font = Lib.FontTitle, Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 336), Parent = holder })
+	Lib.rarityText(r, t)
+	Lib.label({ Text = "Added to your base!", Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 372), Parent = holder })
+
 	Lib.button({ Text = "Nice!", Size = UDim2.fromOffset(200, 56), Position = UDim2.new(0.5, -100, 0, 408), Color = C.Green, Color2 = C.Green2, Parent = holder, OnClick = close })
 	overlay.Activated:Connect(close)
 	task.delay(7, close)

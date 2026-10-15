@@ -181,8 +181,9 @@ function Effects.Init(fxGui: ScreenGui)
 		local text = if level == "Mythic"
 			then "🔥 MYTHIC on the belt: " .. name
 			elseif level == "Secret" then "🌑 SECRET on the belt: " .. name
+			elseif level == "Iconic" then "🌟 ICONIC on the belt: " .. name
 			else "✨ LEGENDARY on the belt: " .. name
-		pushBanner({ text = text, color = if level == "Secret" then Color3.fromRGB(60, 50, 90) else color, sound = "Spawn" .. level, rainbow = level == "Secret" or level == "Mythic" })
+		pushBanner({ text = text, color = if level == "Secret" then Color3.fromRGB(60, 50, 90) else color, sound = "Spawn" .. level, rainbow = level == "Secret" or level == "Mythic" or level == "Iconic" })
 	end)
 
 	State.On("Purchased", function(name: string)

@@ -8,6 +8,7 @@ local PolicyService = game:GetService("PolicyService")
 local RunService = game:GetService("RunService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local Economy = require(Shared.Config.Economy)
 local Eggs = require(Shared.Config.Eggs)
 local Format = require(Shared.Util.Format)
 local GameConfig = require(Shared.Config.GameConfig)
@@ -25,18 +26,26 @@ local EventService = require(script.Parent.EventService)
 local ShopService = {}
 local rng = Random.new()
 
--- Hatches an egg: rolls the Tung, puts it in the base (or the waiting queue
--- when the base is full) and plays the hatch animation for the buyer.
-function ShopService.Hatch(player: Player, egg: Eggs.Egg): string
-	local id, mut = Eggs.Roll(egg, rng)
-	Bus.Fire("GrantTung", player, id, mut, "egg")
-	Remotes.Event("Hatch"):FireClient(player, { egg = egg.key, tung = id, mut = mut })
-	local t = Tungs.Get(id)
-	return Mutations.Prefix(mut) .. (if t then t.name else "Tung")
+-- Hatches `count` eggs: rolls each Tung, puts them in the base (or the waiting
+-- queue when the base is full) and plays the hatch animation for the buyer.
+-- Returns a short summary ("Dragon Tung" or "10 Tungs").
+function ShopService.Hatch(player: Player, egg: Eggs.Egg, count: number): string
+	local results = {}
+	for _ = 1, math.clamp(count, 1, 10) do
+		local id, mut = Eggs.Roll(egg, rng)
+		Bus.Fire("GrantTung", player, id, mut, "egg")
+		table.insert(results, { tung = id, mut = mut })
+	end
+	Remotes.Event("Hatch"):FireClient(player, { egg = egg.key, results = results })
+	if #results == 1 then
+		local t = Tungs.Get(results[1].tung)
+		return Mutations.Prefix(results[1].mut) .. (if t then t.name else "Tung")
+	end
+	return #results .. " Tungs"
 end
 
-local function cashPack(player: Player, data: any, seconds: number, minimum: number): string
-	local amount = math.max(minimum, math.floor(EconomyService.Income(player, data) * seconds))
+local function cashPack(player: Player, data: any, pack: number): string
+	local amount = Economy.CashPackAmount(pack, data.money, EconomyService.Income(player, data))
 	EconomyService.AddMoney(player, amount)
 	return Format.Money(amount)
 end
@@ -73,21 +82,21 @@ local GRANTS: { [string]: (Player, any) -> string } = {
 		data.tokens.SkipRebirth = (data.tokens.SkipRebirth or 0) + 1
 		return "a Skip Rebirth token (use it at your Rebirth Altar)"
 	end,
-	CashSmall = function(player, data)
-		return cashPack(player, data, 30 * 60, 5000) .. "!"
-	end,
-	CashBig = function(player, data)
-		return cashPack(player, data, 3 * 3600, 50000) .. "!"
-	end,
 	BaseShield = function(_, data)
 		-- BaseService uses the token on its next tick (or right after Thief Night)
 		data.tokens.Shield = (data.tokens.Shield or 0) + 1
 		return "a Base Shield (5-minute lock)"
 	end,
 }
-for _, egg in Eggs.List do
-	GRANTS[egg.product] = function(player, _)
-		return "a " .. egg.name .. ". It hatched " .. ShopService.Hatch(player, egg) .. "!"
+for pack = 1, #Economy.CASH_PACK_MULT do
+	GRANTS["Cash" .. pack] = function(player, data)
+		return cashPack(player, data, pack) .. "!"
+	end
+end
+for key, b in Eggs.ByProduct do
+	GRANTS[key] = function(player, _)
+		local what = ShopService.Hatch(player, b.egg, b.count)
+		return (if b.count == 1 then "a " .. b.egg.name else b.count .. " " .. b.egg.name .. "s") .. ". You hatched " .. what .. "!"
 	end
 end
 

@@ -760,7 +760,7 @@ local function onHype(h: any)
 			WorldFx.Shake(0.4, 1.5)
 		end)
 	end
-	chat("[TUNG MACHINE] " .. (if h.level == "Mythic" then "🔥 A MYTHIC " elseif h.level == "Secret" then "🌑 A SECRET " else "✨ A LEGENDARY ") .. string.upper(name) .. " IS ON THE BELT!", color)
+	chat("[TUNG MACHINE] " .. (if h.level == "Mythic" then "🔥 A MYTHIC " elseif h.level == "Secret" then "🌑 A SECRET " elseif h.level == "Iconic" then "🌟 AN ICONIC " else "✨ A LEGENDARY ") .. string.upper(name) .. " IS ON THE BELT!", color)
 	State.Fire("Hype", h.level, name, color, t)
 end
 
@@ -987,7 +987,7 @@ local function incomePops(t: number)
 			local id = m:GetAttribute("TungId") :: string
 			local mut = m:GetAttribute("Mutation") :: string?
 			local tung = Tungs.Get(id)
-			if tung then
+			if tung and tung.income > 0 then
 				local amount = tung.income * Mutations.Mult(mut) * mult * 2.5
 				local anchor = Instance.new("Part")
 				anchor.Anchored = true

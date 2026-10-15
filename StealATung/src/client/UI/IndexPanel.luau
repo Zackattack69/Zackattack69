@@ -9,7 +9,6 @@ local Economy = require(Shared.Config.Economy)
 local Mutations = require(Shared.Config.Mutations)
 local Rarities = require(Shared.Config.Rarities)
 local Tungs = require(Shared.Config.Tungs)
-local Format = require(Shared.Util.Format)
 
 local State = require(script.Parent.Parent.State)
 local Lib = require(script.Parent.Lib)
@@ -52,7 +51,7 @@ local function card(parent: Instance, t: Tungs.Tung, entry: any?, order: number)
 	local r = Lib.label({ Text = Tungs.RarityLabel(t), Font = Lib.FontTitle, Size = UDim2.new(1, -10, 0, 18), Position = UDim2.fromOffset(5, 146), Parent = f })
 	Lib.rarityText(r, t)
 	if found then
-		Lib.label({ Text = Format.Money(t.income) .. "/s", Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 165), TextColor3 = Color3.fromRGB(255, 230, 110), Parent = f })
+		Lib.label({ Text = Economy.IncomeText(t.id, nil), Size = UDim2.new(1, -10, 0, 16), Position = UDim2.fromOffset(5, 165), TextColor3 = Color3.fromRGB(255, 230, 110), Parent = f })
 		local icons = {}
 		for _, m in Mutations.List do
 			if entry.m and entry.m[m.key] then

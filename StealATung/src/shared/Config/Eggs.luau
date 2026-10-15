@@ -1,25 +1,27 @@
 --!strict
--- Robux eggs: buy one in the Shop (Eggs tab) and it hatches right away into a
--- random Tung that goes straight into your base. The odds are shown on every
--- egg before you buy (Roblox requires that for paid random items), and eggs
--- are hidden for players whose country doesn't allow them.
+-- Robux eggs: buy 1, 3 or 10 in the Shop and they hatch right away into Tungs
+-- that go straight into your base. Every egg has its own list of Tungs with
+-- the exact chance of each, shown on the egg before you buy (Roblox requires
+-- that for paid random items). Eggs are hidden for players whose country
+-- doesn't allow them.
 --
 -- Fairness (Design Doc): Mythics never come from eggs.
 
 local Mutations = require(script.Parent.Mutations)
 local Tungs = require(script.Parent.Tungs)
 
-export type Odds = { rarity: string, chance: number }
+export type Content = { tung: string, chance: number } -- chance in percent
 export type MutOdds = { key: string, chance: number }
+export type Bundle = { count: number, product: string } -- product key in Products
 
 export type Egg = {
 	key: string,
 	name: string,
-	product: string, -- key in Products
 	color: Color3,
 	color2: Color3,
-	odds: { Odds }, -- rarity chances (percent)
+	contents: { Content },
 	mutations: { MutOdds }?, -- mutation chances (percent); missing = no mutation
+	bundles: { Bundle },
 	desc: string,
 }
 
@@ -29,95 +31,101 @@ Eggs.List = {
 	{
 		key = "Tung",
 		name = "Tung Egg",
-		product = "EggTung",
 		color = Color3.fromRGB(226, 170, 110),
-		color2 = Color3.fromRGB(170, 110, 60),
-		odds = { { rarity = "Uncommon", chance = 55 }, { rarity = "Rare", chance = 35 }, { rarity = "Epic", chance = 9 }, { rarity = "Legendary", chance = 1 } },
-		desc = "A wooden egg with a Tung inside.",
+		color2 = Color3.fromRGB(150, 96, 50),
+		contents = {
+			{ tung = "LeafyTung", chance = 30 },
+			{ tung = "FlowerTung", chance = 22 },
+			{ tung = "PirateTung", chance = 18 },
+			{ tung = "BeeTung", chance = 13 },
+			{ tung = "WizardTung", chance = 9 },
+			{ tung = "ClownTung", chance = 5.5 },
+			{ tung = "SamuraiTung", chance = 2 },
+			{ tung = "DragonTung", chance = 0.5 },
+		},
+		bundles = { { count = 1, product = "EggTung1" }, { count = 3, product = "EggTung3" }, { count = 10, product = "EggTung10" } },
+		desc = "A wooden egg full of Tungs.",
 	},
 	{
 		key = "Golden",
 		name = "Golden Egg",
-		product = "EggGolden",
-		color = Color3.fromRGB(255, 210, 60),
-		color2 = Color3.fromRGB(220, 150, 20),
-		odds = { { rarity = "Rare", chance = 50 }, { rarity = "Epic", chance = 35 }, { rarity = "Legendary", chance = 13 }, { rarity = "Secret", chance = 2 } },
+		color = Color3.fromRGB(255, 214, 60),
+		color2 = Color3.fromRGB(214, 140, 20),
+		contents = {
+			{ tung = "ChocoTung", chance = 35 },
+			{ tung = "KnightTung", chance = 25 },
+			{ tung = "AstroTung", chance = 18 },
+			{ tung = "VampireTung", chance = 12 },
+			{ tung = "MagicianTung", chance = 7 },
+			{ tung = "EmperorTung", chance = 2.5 },
+			{ tung = "GoldenBatTung", chance = 0.5 },
+		},
 		mutations = { { key = "Gold", chance = 25 } },
+		bundles = { { count = 1, product = "EggGolden1" }, { count = 3, product = "EggGolden3" }, { count = 10, product = "EggGolden10" } },
 		desc = "Shiny! 25% chance the Tung comes out Gold.",
 	},
 	{
 		key = "Rainbow",
 		name = "Rainbow Egg",
-		product = "EggRainbow",
 		color = Color3.fromRGB(255, 120, 200),
 		color2 = Color3.fromRGB(110, 140, 255),
-		odds = { { rarity = "Rare", chance = 45 }, { rarity = "Epic", chance = 38 }, { rarity = "Legendary", chance = 15 }, { rarity = "Secret", chance = 2 } },
+		contents = {
+			{ tung = "BubblegumTung", chance = 30 },
+			{ tung = "DiscoTung", chance = 25 },
+			{ tung = "ElectricTung", chance = 20 },
+			{ tung = "GhostTung", chance = 14 },
+			{ tung = "WitchTung", chance = 8 },
+			{ tung = "UnicornTung", chance = 2.6 },
+			{ tung = "GlitchTung", chance = 0.4 },
+		},
 		mutations = { { key = "Gold", chance = 55 }, { key = "Diamond", chance = 32 }, { key = "Rainbow", chance = 12 }, { key = "Cursed", chance = 1 } },
+		bundles = { { count = 1, product = "EggRainbow1" }, { count = 3, product = "EggRainbow3" }, { count = 10, product = "EggRainbow10" } },
 		desc = "Always hatches a mutated Tung!",
 	},
 	{
 		key = "Moon",
 		name = "Sahur Moon Egg",
-		product = "EggMoon",
-		color = Color3.fromRGB(60, 70, 160),
+		color = Color3.fromRGB(70, 80, 170),
 		color2 = Color3.fromRGB(24, 26, 70),
-		odds = { { rarity = "Epic", chance = 55 }, { rarity = "Legendary", chance = 37 }, { rarity = "Secret", chance = 8 } },
-		desc = "The rarest egg. Epic or better, every time.",
+		contents = {
+			{ tung = "IceKingTung", chance = 30 },
+			{ tung = "CyborgTung", chance = 25 },
+			{ tung = "DragonTung", chance = 20 },
+			{ tung = "PhoenixTung", chance = 12 },
+			{ tung = "ThunderTung", chance = 9 },
+			{ tung = "ShadowTung", chance = 3 },
+			{ tung = "SahurMoonTung", chance = 1 },
+		},
+		bundles = { { count = 1, product = "EggMoon1" }, { count = 3, product = "EggMoon3" }, { count = 10, product = "EggMoon10" } },
+		desc = "Epic or better, every time.",
 	},
 } :: { Egg }
 
 Eggs.ByKey = {} :: { [string]: Egg }
-Eggs.ByProduct = {} :: { [string]: Egg }
+Eggs.ByProduct = {} :: { [string]: { egg: Egg, count: number } }
 for _, e in Eggs.List do
 	Eggs.ByKey[e.key] = e
-	Eggs.ByProduct[e.product] = e
+	for _, b in e.bundles do
+		Eggs.ByProduct[b.product] = { egg = e, count = b.count }
+	end
+	for _, c in e.contents do
+		local t = Tungs.Get(c.tung)
+		assert(t and t.rarity ~= "Mythic", "Egg " .. e.key .. " has a bad Tung: " .. c.tung)
+	end
 end
 
--- "Uncommon 55% · Rare 35% · ..." (+ mutation odds)
-function Eggs.OddsText(egg: Egg): string
-	local parts = {}
-	for _, o in egg.odds do
-		table.insert(parts, o.rarity .. " " .. o.chance .. "%")
-	end
-	local text = table.concat(parts, " · ")
-	local muts = egg.mutations
-	if muts then
-		local m = {}
-		for _, o in muts do
-			table.insert(m, o.key .. " " .. o.chance .. "%")
-		end
-		text ..= "\nMutation: " .. table.concat(m, " · ")
-	end
-	return text
-end
-
--- Rolls what hatches: (tung id, mutation).
+-- Rolls one hatch: (tung id, mutation).
 function Eggs.Roll(egg: Egg, rng: Random): (string, string)
 	local total = 0
-	for _, o in egg.odds do
-		total += o.chance
+	for _, c in egg.contents do
+		total += c.chance
 	end
 	local r = rng:NextNumber() * total
-	local rarity = egg.odds[#egg.odds].rarity
-	for _, o in egg.odds do
-		r -= o.chance
+	local id = egg.contents[#egg.contents].tung
+	for _, c in egg.contents do
+		r -= c.chance
 		if r <= 0 then
-			rarity = o.rarity
-			break
-		end
-	end
-	-- a Tung of that rarity, weighted like the belt
-	local pool = Tungs.ByRarity[rarity] or Tungs.ByRarity.Rare
-	local weight = 0
-	for _, t in pool do
-		weight += t.weight
-	end
-	local pick = rng:NextNumber() * weight
-	local tung = pool[#pool]
-	for _, t in pool do
-		pick -= t.weight
-		if pick <= 0 then
-			tung = t
+			id = c.tung
 			break
 		end
 	end
@@ -134,7 +142,7 @@ function Eggs.Roll(egg: Egg, rng: Random): (string, string)
 			end
 		end
 	end
-	return tung.id, mut
+	return id, mut
 end
 
 return Eggs

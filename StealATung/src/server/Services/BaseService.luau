@@ -1033,10 +1033,19 @@ local function incomeTick()
 		local data = p.data
 		data.playtime += 1
 		local mult = EconomyService.Multiplier(owner, data)
+		-- Iconic Tungs earn a share of what everything else on a pad makes
+		local placed = {}
+		for slot in st.tungs do
+			local entry = data.slots[key(slot)]
+			if entry then
+				placed[slot] = entry
+			end
+		end
+		local fixed = Economy.SlotIncome(placed)
 		for slot, _ in st.tungs do
 			local entry = data.slots[key(slot)]
 			if entry then
-				local rate = Economy.TungIncome(entry.id, entry.m) * mult
+				local rate = if Economy.IsIconic(entry.id) then fixed * Economy.IconicShare(entry.id, entry.m) * mult else Economy.TungIncome(entry.id, entry.m) * mult
 				local cap = rate * Economy.COLLECT_CAP_SECONDS
 				entry.s = math.min(cap, (entry.s or 0) + rate)
 				updateCounter(st, slot, entry.s)

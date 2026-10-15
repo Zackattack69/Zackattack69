@@ -6,6 +6,7 @@
 local Rarities = require(script.Parent.Rarities)
 local Tungs = require(script.Parent.Tungs)
 local Mutations = require(script.Parent.Mutations)
+local Format = require(script.Parent.Parent.Util.Format)
 
 local Economy = {}
 
@@ -147,6 +148,48 @@ function Economy.TungIncome(id: string, mut: string?): number
 	return t.income * Mutations.Mult(mut)
 end
 
+-- Robux cash packs scale with how much money you have right now (and your
+-- income), so they're worth it at every stage. Pack 1..5.
+Economy.CASH_PACK_MULT = { 1, 8, 32, 160, 330 }
+function Economy.CashPackAmount(pack: number, money: number, income: number): number
+	local base = math.max(10000, money * 0.25, income * 300)
+	return Economy.Nice(base * (Economy.CASH_PACK_MULT[pack] or 1))
+end
+
+-- Iconic Tungs earn a share of everything else in your base instead of a fixed amount.
+Economy.ICONIC_SHARE = 0.2
+
+function Economy.IsIconic(id: string): boolean
+	local t = Tungs.Get(id)
+	return t ~= nil and t.rarity == "Iconic"
+end
+
+-- Extra share of income an Iconic Tung adds (0.2 = +20%; mutations multiply it).
+function Economy.IconicShare(id: string, mut: string?): number
+	return if Economy.IsIconic(id) then Economy.ICONIC_SHARE * Mutations.Mult(mut) else 0
+end
+
+-- Income/s from a set of slots before multipliers: (fixed income, iconic share).
+function Economy.SlotIncome(slots: { [any]: any }): (number, number)
+	local fixed, share = 0, 0
+	for _, s in slots do
+		if Economy.IsIconic(s.id) then
+			share += Economy.IconicShare(s.id, s.m)
+		else
+			fixed += Economy.TungIncome(s.id, s.m)
+		end
+	end
+	return fixed, share
+end
+
+-- What a Tung's income looks like on nameplates and cards.
+function Economy.IncomeText(id: string, mut: string?): string
+	if Economy.IsIconic(id) then
+		return "+" .. math.floor(Economy.IconicShare(id, mut) * 100 + 0.5) .. "% income"
+	end
+	return Format.Money(Economy.TungIncome(id, mut)) .. "/s"
+end
+
 function Economy.TungPrice(id: string, mut: string?): number
 	local t = Tungs.Get(id)
 	if not t then
@@ -180,7 +223,7 @@ function Economy.CountAtLeast(data: any, rarity: string): number
 	local n = 0
 	for _, s in data.slots do
 		local t = Tungs.Get(s.id)
-		if t and not t.special and Rarities.Order(t.rarity) >= need then
+		if t and not t.special and t.rarity ~= "Iconic" and Rarities.Order(t.rarity) >= need then
 			n += 1
 		end
 	end

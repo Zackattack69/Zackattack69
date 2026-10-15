@@ -115,8 +115,8 @@ local handlers: { [string]: Handler } = {
 	AdminEvent = function(player, key)
 		return AdminService.StartEvent(player, key)
 	end,
-	AdminEgg = function(player, key)
-		return AdminService.TestEgg(player, key)
+	AdminEgg = function(player, key, count)
+		return AdminService.TestEgg(player, key, count)
 	end,
 	AdminMusic = function(player, id)
 		return AdminService.SetMusic(player, id)

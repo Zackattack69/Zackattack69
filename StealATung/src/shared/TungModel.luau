@@ -15,6 +15,7 @@ local CollectionService = game:GetService("CollectionService")
 local Rarities = require(script.Parent.Config.Rarities)
 local Tungs = require(script.Parent.Config.Tungs)
 local Mutations = require(script.Parent.Config.Mutations)
+local Economy = require(script.Parent.Config.Economy)
 local Format = require(script.Parent.Util.Format)
 local Style = require(script.Parent.Style)
 local TungFace = require(script.Parent.TungFace)
@@ -157,7 +158,7 @@ local function buildHat(model: Model, kind: string, accent: Color3?)
 		part(hat, "Tail1", BLOCK, Vector3.new(0.18, 0.35, 1.3), CFrame.new(0.3, 5.5, 1.75) * CFrame.Angles(-0.5, 0.3, 0), red, M.Fabric)
 		part(hat, "Tail2", BLOCK, Vector3.new(0.18, 0.35, 1.1), CFrame.new(-0.25, 5.4, 1.7) * CFrame.Angles(-0.8, -0.3, 0), red, M.Fabric)
 	elseif kind == "Afro" then
-		part(hat, "Afro", BALL, Vector3.new(3.6, 3.0, 3.4), CFrame.new(0, top + 0.6, 0.2), Color3.fromRGB(58, 34, 24), M.Fabric)
+		part(hat, "Afro", BALL, Vector3.new(3.6, 3.0, 3.4), CFrame.new(0, top + 0.6, 0.2), accent or Color3.fromRGB(58, 34, 24), M.Fabric)
 	elseif kind == "Antenna" then
 		part(hat, "Stalk", CYL, Vector3.new(1.4, 0.16, 0.16), CFrame.new(0, top + 0.7, 0) * VERT, Color3.fromRGB(150, 155, 165), M.Metal)
 		part(hat, "AntennaTip", BALL, Vector3.new(0.5, 0.5, 0.5), CFrame.new(0, top + 1.5, 0), accent or Color3.fromRGB(255, 40, 40), M.Neon)
@@ -193,6 +194,129 @@ local function buildHat(model: Model, kind: string, accent: Color3?)
 		for _, sx in { -1, 1 } do
 			limb(hat, "Horn", Vector3.new(sx * 0.85, top - 0.2, 0), Vector3.new(sx * 1.55, top + 1.3, -0.15), 0.45, c, M.SmoothPlastic)
 			part(hat, "HornTip", BALL, Vector3.new(0.35, 0.35, 0.35), CFrame.new(sx * 1.6, top + 1.4, -0.17), accent or Color3.new(1, 0.4, 0.1), M.Neon)
+		end
+	elseif kind == "Chef" then
+		part(hat, "Band", CYL, Vector3.new(0.9, 2.3, 2.3), CFrame.new(0, top + 0.45, 0) * VERT, WHITE, M.Fabric)
+		for _, off in { Vector3.new(0, 1.5, 0), Vector3.new(0.6, 1.3, 0.2), Vector3.new(-0.6, 1.3, -0.1), Vector3.new(0.1, 1.35, 0.6) } do
+			part(hat, "Puff", BALL, Vector3.new(1.5, 1.5, 1.5), CFrame.new(Vector3.new(0, top, 0) + off), WHITE, M.Fabric)
+		end
+	elseif kind == "Party" or kind == "Wizard" or kind == "Santa" then
+		-- a cone made of stacked discs
+		local c = accent or (if kind == "Party" then Color3.fromRGB(255, 80, 170) elseif kind == "Wizard" then Color3.fromRGB(90, 60, 200) else Color3.fromRGB(220, 30, 40))
+		local tall = if kind == "Wizard" then 3.4 else 2.4
+		local n = 7
+		for i = 0, n - 1 do
+			local f = i / n
+			local d = (if kind == "Wizard" then 2.4 else 2.0) * (1 - f) + 0.15
+			local color = if kind == "Party" and i % 2 == 1 then Color3.fromRGB(255, 220, 60) else c
+			part(hat, "Cone", CYL, Vector3.new(tall / n + 0.02, d, d), CFrame.new(0, top + 0.1 + (i + 0.5) * tall / n, 0) * VERT, color, M.Fabric)
+		end
+		if kind == "Wizard" then
+			part(hat, "Brim", CYL, Vector3.new(0.15, 3.6, 3.6), CFrame.new(0, top + 0.05, 0) * VERT, c, M.Fabric)
+			part(hat, "Star", BALL, Vector3.new(0.4, 0.4, 0.4), CFrame.new(0.45, top + 1.2, -0.75), Color3.fromRGB(255, 230, 80), M.Neon)
+		elseif kind == "Santa" then
+			part(hat, "Trim", CYL, Vector3.new(0.45, 2.6, 2.6), CFrame.new(0, top + 0.15, 0) * VERT, WHITE, M.Fabric)
+			part(hat, "Pompom", BALL, Vector3.new(0.6, 0.6, 0.6), CFrame.new(0, top + tall + 0.2, 0), WHITE, M.Fabric)
+		else
+			part(hat, "Pompom", BALL, Vector3.new(0.5, 0.5, 0.5), CFrame.new(0, top + tall + 0.15, 0), Color3.fromRGB(255, 220, 60), M.Fabric)
+		end
+	elseif kind == "Cowboy" or kind == "Sombrero" then
+		local c = accent or (if kind == "Cowboy" then Color3.fromRGB(150, 96, 52) else Color3.fromRGB(236, 196, 90))
+		local brim = if kind == "Sombrero" then 5.4 else 4.2
+		part(hat, "Brim", CYL, Vector3.new(0.18, brim, brim), CFrame.new(0, top + 0.1, 0) * VERT, c, M.Fabric)
+		part(hat, "Crown", CYL, Vector3.new(1.3, 2.2, 2.2), CFrame.new(0, top + 0.75, 0) * VERT, c, M.Fabric)
+		part(hat, "Band", CYL, Vector3.new(0.3, 2.26, 2.26), CFrame.new(0, top + 0.35, 0) * VERT, if kind == "Sombrero" then Color3.fromRGB(220, 40, 60) else Color3.fromRGB(60, 40, 24), M.Fabric)
+		if kind == "Sombrero" then
+			part(hat, "BrimTrim", CYL, Vector3.new(0.2, brim - 0.6, brim - 0.6), CFrame.new(0, top + 0.12, 0) * VERT, Color3.fromRGB(60, 170, 80), M.Fabric)
+		end
+	elseif kind == "Beanie" or kind == "Propeller" then
+		local c = accent or Color3.fromRGB(60, 120, 230)
+		part(hat, "Beanie", BALL, Vector3.new(2.6, 2.6, 2.6), CFrame.new(0, top - 0.25, 0), c, M.Fabric)
+		part(hat, "Fold", CYL, Vector3.new(0.45, 2.72, 2.72), CFrame.new(0, top + 0.05, 0) * VERT, c:Lerp(Color3.new(0, 0, 0), 0.2), M.Fabric)
+		if kind == "Beanie" then
+			part(hat, "Pompom", BALL, Vector3.new(0.7, 0.7, 0.7), CFrame.new(0, top + 1.15, 0), WHITE, M.Fabric)
+		else
+			part(hat, "Stalk", CYL, Vector3.new(0.5, 0.15, 0.15), CFrame.new(0, top + 1.25, 0) * VERT, Color3.fromRGB(80, 80, 90))
+			for _, a in { 0, math.pi * 2 / 3, math.pi * 4 / 3 } do
+				part(hat, "Blade", BLOCK, Vector3.new(1.3, 0.08, 0.35), CFrame.new(0, top + 1.5, 0) * CFrame.Angles(0, a, 0) * CFrame.new(0.65, 0, 0), if a == 0 then Color3.fromRGB(255, 60, 60) else Color3.fromRGB(255, 220, 60))
+			end
+		end
+	elseif kind == "Halo" then
+		part(hat, "Halo", CYL, Vector3.new(0.15, 2.2, 2.2), CFrame.new(0, top + 1.1, 0) * VERT, Color3.fromRGB(255, 225, 90), M.Neon, { Transparency = 0.1 })
+		part(hat, "HaloHole", CYL, Vector3.new(0.17, 1.6, 1.6), CFrame.new(0, top + 1.1, 0) * VERT, Color3.fromRGB(255, 245, 200), M.SmoothPlastic, { Transparency = 0.6 })
+	elseif kind == "Pirate" then
+		local black = Color3.fromRGB(30, 28, 34)
+		part(hat, "Hat", BLOCK, Vector3.new(3.2, 1.3, 1.5), CFrame.new(0, top + 0.6, 0), black, M.Fabric)
+		part(hat, "Top", CYL, Vector3.new(1.3, 2.0, 2.0), CFrame.new(0, top + 0.7, 0) * CFrame.Angles(0, math.pi / 2, 0), black, M.Fabric)
+		part(hat, "Skull", BALL, Vector3.new(0.55, 0.55, 0.55), CFrame.new(0, top + 0.75, -0.8), WHITE)
+	elseif kind == "Flower" or kind == "Mushroom" then
+		if kind == "Flower" then
+			local c = accent or Color3.fromRGB(255, 120, 180)
+			for i = 0, 5 do
+				local a = i / 6 * math.pi * 2
+				part(hat, "Petal", BALL, Vector3.new(0.9, 0.9, 0.9), CFrame.new(math.cos(a) * 0.7, top + 0.6, math.sin(a) * 0.7), c)
+			end
+			part(hat, "Middle", BALL, Vector3.new(0.75, 0.75, 0.75), CFrame.new(0, top + 0.75, 0), Color3.fromRGB(255, 220, 60))
+		else
+			part(hat, "Cap", BALL, Vector3.new(3.4, 3.4, 3.4), CFrame.new(0, top + 0.1, 0), accent or Color3.fromRGB(230, 50, 50))
+			for i = 0, 4 do
+				local a = i / 5 * math.pi * 2
+				part(hat, "Dot", BALL, Vector3.new(0.6, 0.6, 0.6), CFrame.new(math.cos(a) * 1.15, top + 1.2, math.sin(a) * 1.15), WHITE)
+			end
+		end
+	elseif kind == "Headphones" then
+		local c = accent or Color3.fromRGB(40, 40, 48)
+		part(hat, "Band", BLOCK, Vector3.new(3.0, 0.3, 0.5), CFrame.new(0, top + 0.15, 0), c)
+		for _, sx in { -1, 1 } do
+			part(hat, "BandSide", BLOCK, Vector3.new(0.3, 1.4, 0.5), CFrame.new(sx * 1.45, top - 0.55, 0), c)
+			part(hat, "Cup", CYL, Vector3.new(0.45, 1.2, 1.2), CFrame.new(sx * 1.45, 5.0, 0), Color3.fromRGB(255, 70, 90))
+		end
+	elseif kind == "Bow" then
+		local c = accent or Color3.fromRGB(255, 100, 170)
+		for _, sx in { -1, 1 } do
+			part(hat, "Loop", BLOCK, Vector3.new(1.1, 0.8, 0.35), CFrame.new(sx * 0.55, top + 0.45, -0.2) * CFrame.Angles(0, 0, sx * 0.35), c, M.Fabric)
+		end
+		part(hat, "Knot", BALL, Vector3.new(0.5, 0.5, 0.5), CFrame.new(0, top + 0.45, -0.2), c:Lerp(Color3.new(0, 0, 0), 0.2), M.Fabric)
+	elseif kind == "Mohawk" then
+		local c = accent or Color3.fromRGB(255, 60, 160)
+		for i = -2, 2 do
+			part(hat, "Spike", BLOCK, Vector3.new(0.35, 1.3 - math.abs(i) * 0.15, 0.6), CFrame.new(0, top + 0.55, i * 0.5) * CFrame.Angles(i * 0.15, 0, 0), c)
+		end
+	elseif kind == "Graduation" then
+		local black = Color3.fromRGB(26, 26, 32)
+		part(hat, "Cap", CYL, Vector3.new(0.6, 2.3, 2.3), CFrame.new(0, top + 0.25, 0) * VERT, black, M.Fabric)
+		part(hat, "Board", BLOCK, Vector3.new(3.0, 0.15, 3.0), CFrame.new(0, top + 0.6, 0) * CFrame.Angles(0, math.pi / 4, 0), black, M.Fabric)
+		part(hat, "Tassel", BLOCK, Vector3.new(0.12, 0.9, 0.12), CFrame.new(1.1, top + 0.2, -1.1), Color3.fromRGB(255, 200, 40), M.Fabric)
+	elseif kind == "Viking" then
+		local metal = Color3.fromRGB(150, 155, 165)
+		part(hat, "Dome", BALL, Vector3.new(2.8, 2.8, 2.8), CFrame.new(0, top - 0.3, 0), metal, M.Metal)
+		part(hat, "Rim", CYL, Vector3.new(0.35, 2.85, 2.85), CFrame.new(0, top - 0.05, 0) * VERT, Color3.fromRGB(190, 150, 70), M.Metal)
+		for _, sx in { -1, 1 } do
+			limb(hat, "Horn", Vector3.new(sx * 1.2, top + 0.4, 0), Vector3.new(sx * 1.9, top + 1.6, -0.1), 0.45, Color3.fromRGB(245, 240, 225), M.SmoothPlastic)
+		end
+	elseif kind == "Sweatband" then
+		part(hat, "Band", CYL, Vector3.new(0.45, 2.72, 2.72), CFrame.new(0, 5.85, 0) * VERT, accent or Color3.fromRGB(230, 40, 60), M.Fabric)
+	elseif kind == "Topknot" then
+		part(hat, "Hair", CYL, Vector3.new(0.35, 2.5, 2.5), CFrame.new(0, top + 0.12, 0) * VERT, Color3.fromRGB(26, 22, 22))
+		part(hat, "Bun", BALL, Vector3.new(0.9, 0.9, 0.9), CFrame.new(0, top + 0.6, 0.3), Color3.fromRGB(26, 22, 22))
+		part(hat, "Tie", CYL, Vector3.new(0.2, 0.5, 0.5), CFrame.new(0, top + 0.35, 0.3) * VERT, accent or Color3.fromRGB(220, 40, 50))
+	elseif kind == "SpaceHelmet" then
+		part(hat, "Bubble", BALL, Vector3.new(4.2, 4.2, 4.2), CFrame.new(0, 5.1, 0), Color3.fromRGB(200, 235, 255), M.Glass, { Transparency = 0.7 })
+		part(hat, "Collar", CYL, Vector3.new(0.5, 3.0, 3.0), CFrame.new(0, 3.2, 0) * VERT, WHITE)
+	elseif kind == "Knight" then
+		local metal = Color3.fromRGB(170, 175, 186)
+		part(hat, "Helm", CYL, Vector3.new(1.6, 2.7, 2.7), CFrame.new(0, top + 0.2, 0) * VERT, metal, M.Metal)
+		part(hat, "Plume", BALL, Vector3.new(0.8, 1.6, 0.8), CFrame.new(0, top + 1.4, 0.2), accent or Color3.fromRGB(220, 40, 50), M.Fabric)
+	elseif kind == "Cherry" or kind == "Stem" then
+		if kind == "Cherry" then
+			part(hat, "Cream", BALL, Vector3.new(2.2, 1.2, 2.2), CFrame.new(0, top + 0.2, 0), WHITE)
+			part(hat, "Cherry", BALL, Vector3.new(0.8, 0.8, 0.8), CFrame.new(0, top + 0.9, 0), Color3.fromRGB(220, 20, 40))
+		end
+		part(hat, "Stalk", CYL, Vector3.new(0.9, 0.22, 0.22), CFrame.new(0.1, top + (if kind == "Cherry" then 1.5 else 0.5), 0) * CFrame.Angles(0, 0, 1.3), Color3.fromRGB(70, 140, 50))
+	elseif kind == "Unicorn" then
+		limb(hat, "Horn", Vector3.new(0, top - 0.2, -0.6), Vector3.new(0, top + 1.6, -1.2), 0.45, Color3.fromRGB(255, 220, 120), M.Foil)
+		for i, c in { Color3.fromRGB(255, 120, 180), Color3.fromRGB(150, 120, 255), Color3.fromRGB(110, 210, 255) } do
+			part(hat, "Mane", BALL, Vector3.new(0.9, 0.9, 0.9), CFrame.new(0, top + 0.1 - i * 0.6, 1.25), c)
 		end
 	end
 	if #hat:GetChildren() == 0 then
@@ -277,6 +401,59 @@ local function buildProp(model: Model, kind: string, accent: Color3?, skin: { Ba
 				}))
 			end
 		end
+	elseif kind == "Glasses" then
+		local c = accent or Color3.fromRGB(30, 30, 36)
+		for _, sx in { -1, 1 } do
+			part(model, "Rim", CYL, Vector3.new(0.08, 1.05, 1.05), CFrame.new(sx * 0.5, 5.0, -1.78) * CFrame.Angles(0, math.pi / 2, 0), c)
+			part(model, "Lens", CYL, Vector3.new(0.06, 0.88, 0.88), CFrame.new(sx * 0.5, 5.0, -1.8) * CFrame.Angles(0, math.pi / 2, 0), Color3.fromRGB(220, 240, 255), M.Glass, { Transparency = 0.6 })
+		end
+		part(model, "Bridge", BLOCK, Vector3.new(0.3, 0.08, 0.08), CFrame.new(0, 5.08, -1.78), c)
+	elseif kind == "Bowtie" or kind == "Tie" then
+		local c = accent or Color3.fromRGB(220, 30, 50)
+		if kind == "Bowtie" then
+			for _, sx in { -1, 1 } do
+				part(model, "Bow", BLOCK, Vector3.new(0.6, 0.45, 0.2), CFrame.new(sx * 0.32, 3.25, -1.36) * CFrame.Angles(0, 0, sx * 0.25), c)
+			end
+			part(model, "BowKnot", BALL, Vector3.new(0.3, 0.3, 0.3), CFrame.new(0, 3.25, -1.42), c:Lerp(Color3.new(0, 0, 0), 0.2))
+		else
+			part(model, "Knot", BLOCK, Vector3.new(0.35, 0.3, 0.2), CFrame.new(0, 3.35, -1.36), c)
+			part(model, "Tie", BLOCK, Vector3.new(0.38, 1.2, 0.14), CFrame.new(0, 2.6, -1.34), c)
+		end
+	elseif kind == "Wings" then
+		local c = accent or Color3.fromRGB(250, 250, 255)
+		for _, sx in { -1, 1 } do
+			part(model, "Wing", BLOCK, Vector3.new(2.4, 1.3, 0.2), CFrame.new(sx * 1.6, 4.6, 1.2) * CFrame.Angles(0, sx * -0.4, sx * 0.45), c)
+			part(model, "WingTip", BLOCK, Vector3.new(1.6, 0.9, 0.2), CFrame.new(sx * 2.5, 5.3, 1.45) * CFrame.Angles(0, sx * -0.4, sx * 0.75), c)
+		end
+	elseif kind == "Backpack" then
+		local c = accent or Color3.fromRGB(70, 130, 220)
+		part(model, "Pack", BLOCK, Vector3.new(1.8, 2.2, 0.9), CFrame.new(0, 4.2, 1.6), c, M.Fabric)
+		part(model, "Pocket", BLOCK, Vector3.new(1.3, 0.8, 0.3), CFrame.new(0, 3.7, 2.1), c:Lerp(Color3.new(0, 0, 0), 0.2), M.Fabric)
+	elseif kind == "Spots" or kind == "Stitches" or kind == "Spines" then
+		-- marks on the log's surface
+		local c = accent or Color3.fromRGB(30, 30, 34)
+		local spots = { { 0.6, 2.4 }, { 2.2, 3.4 }, { 3.6, 2.6 }, { 4.9, 3.6 }, { 1.4, 5.6 }, { 5.6, 2.2 }, { 2.9, 5.2 } }
+		for i, s in spots do
+			local a, y = s[1], s[2]
+			local pos = Vector3.new(math.sin(a) * 1.3, y, math.cos(a) * 1.3)
+			local cf = CFrame.lookAt(pos, Vector3.new(0, y, 0))
+			if kind == "Spots" then
+				part(model, "Spot", CYL, Vector3.new(0.06, 0.7 + (i % 3) * 0.2, 0.7 + (i % 3) * 0.2), cf * CFrame.Angles(0, math.pi / 2, 0), c)
+			elseif kind == "Stitches" then
+				part(model, "Stitch", BLOCK, Vector3.new(0.8, 0.08, 0.06), cf * CFrame.Angles(0, 0, 0.4), c)
+				part(model, "Stitch", BLOCK, Vector3.new(0.08, 0.4, 0.06), cf, c)
+			else
+				part(model, "Spine", BLOCK, Vector3.new(0.12, 0.12, 0.5), cf * CFrame.new(0, 0, -0.2), Color3.fromRGB(250, 245, 220))
+			end
+		end
+	elseif kind == "Stripes" then
+		local c = accent or Color3.fromRGB(30, 30, 34)
+		for _, y in { 2.4, 3.3, 5.9 } do
+			part(model, "Stripe", CYL, Vector3.new(0.35, 2.64, 2.64), CFrame.new(0, y, 0) * VERT, c)
+		end
+	elseif kind == "Pacifier" then
+		part(model, "Pacifier", CYL, Vector3.new(0.12, 0.9, 0.9), CFrame.new(0, 3.9, -1.42) * CFrame.Angles(0, math.pi / 2, 0), Color3.fromRGB(120, 200, 255))
+		part(model, "PacifierRing", BALL, Vector3.new(0.4, 0.4, 0.4), CFrame.new(0, 3.9, -1.58), Color3.fromRGB(255, 120, 180))
 	end
 end
 
@@ -339,6 +516,15 @@ local function buildAura(model: Model, t: Tungs.Tung, body: BasePart, root: Base
 		aura(part(model, "AuraShell", CYL, Vector3.new(5.2, 3.3, 3.3), body.CFrame, Color3.fromRGB(255, 80, 200), M.ForceField, { CastShadow = false }))
 		aura(emitter(root, { Name = "SecretSmoke", Texture = PARTICLE_SMOKE, Rate = 8, Lifetime = NumberRange.new(1.5, 2.5), Speed = NumberRange.new(0.5, 1.5), Size = seq(2, 3.5), Transparency = seq(0.45, 1), Color = ColorSequence.new(Color3.fromRGB(20, 15, 30)), SpreadAngle = Vector2.new(180, 30) }))
 		aura(light(body, Color3.fromRGB(200, 120, 255), 12, 1.2))
+	elseif r == "Iconic" then
+		-- a ring of little stars around the feet + turquoise sparkles
+		for i = 0, 7 do
+			local a = i / 8 * math.pi * 2
+			aura(part(model, "IconStar", BALL, Vector3.new(0.45, 0.45, 0.45), CFrame.new(math.cos(a) * 2.3, 0.4, math.sin(a) * 2.3), if i % 2 == 0 then color else Color3.fromRGB(255, 240, 150), M.Neon, { CastShadow = false }))
+		end
+		aura(part(model, "AuraRing", CYL, Vector3.new(0.06, 5, 5), CFrame.new(0, 0.05, 0) * VERT, color, M.Neon, { Transparency = 0.5, CastShadow = false }))
+		aura(emitter(body, { Name = "IconicSparkle", Rate = 10, Lifetime = NumberRange.new(1, 1.8), Speed = NumberRange.new(0.4, 1.2), Size = seq(0.45, 0), Color = ColorSequence.new(color, Color3.fromRGB(255, 245, 190)), SpreadAngle = Vector2.new(180, 180), LightEmission = 1 }))
+		aura(light(body, color, 14, 1.4))
 	elseif r == "Mythic" then
 		local fire = Instance.new("Fire")
 		fire.Color = color
@@ -617,7 +803,7 @@ function TungModel.Nameplate(model: Model, id: string, mut: string?, mode: strin
 		line(3, Tungs.RarityLabel(t), 15, Tungs.Color(t):Lerp(Color3.new(1, 1, 1), 0.15), secret)
 		line(4, Format.Money(t.price * Mutations.Mult(mut)), 17, Color3.fromRGB(110, 240, 110))
 	end
-	line(5, Format.Money(t.income * Mutations.Mult(mut)) .. "/s", 14, Color3.fromRGB(255, 220, 90))
+	line(5, Economy.IncomeText(t.id, mut), 14, if t.rarity == "Iconic" then Color3.fromRGB(110, 255, 230) else Color3.fromRGB(255, 220, 90))
 
 	bb.Parent = root
 	return bb

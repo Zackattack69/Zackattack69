@@ -13,6 +13,7 @@ export type Rarity = {
 	incomeRange: string,
 	scale: number, -- model size multiplier: rarer Tungs are bigger
 	rainbow: boolean?,
+	iconic: boolean?, -- outside the normal ladder: earns a share of your income (Economy.ICONIC_SHARE)
 }
 
 local Rarities = {}
@@ -25,6 +26,8 @@ Rarities.List = {
 	{ key = "Legendary", order = 5, color = Color3.fromRGB(255, 200, 40), color2 = Color3.fromRGB(225, 130, 15), weight = 2.2, aura = "Gold light beam + glitter trail", incomeRange = "1,000–3,500", scale = 1.18 },
 	{ key = "Secret", order = 6, color = Color3.fromRGB(38, 36, 46), color2 = Color3.fromRGB(10, 10, 14), weight = 0.6, aura = "Shifting rainbow outline + shadow smoke", incomeRange = "8,000–25,000", scale = 1.25, rainbow = true },
 	{ key = "Mythic", order = 7, color = Color3.fromRGB(255, 60, 60), color2 = Color3.fromRGB(150, 15, 25), weight = 0.2, aura = "Full-body flame aura + ground cracks + sky beam", incomeRange = "100,000–1,000,000", scale = 1.4 },
+	-- Iconic: no normal rarity. Each one earns 20% of everything else you make, and they're huge.
+	{ key = "Iconic", order = 8, color = Color3.fromRGB(40, 225, 210), color2 = Color3.fromRGB(10, 130, 150), weight = 0.25, aura = "Spinning star ring + turquoise sparkles", incomeRange = "+20% of your income", scale = 1.65, iconic = true },
 } :: { Rarity }
 
 Rarities.ByKey = {} :: { [string]: Rarity }

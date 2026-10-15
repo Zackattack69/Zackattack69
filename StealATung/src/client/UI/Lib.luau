@@ -36,8 +36,10 @@ Lib.Colors = {
 	WoodDark = Color3.fromRGB(34, 28, 74), -- bar backgrounds, key chips
 	Outline = Color3.fromRGB(22, 18, 44),
 	Text = Color3.fromRGB(255, 255, 255),
-	TextDark = Color3.fromRGB(38, 34, 84),
-	SubText = Color3.fromRGB(108, 106, 160),
+	TextDark = Color3.fromRGB(255, 255, 255), -- panels are dark now, so "dark" text is white too
+	SubText = Color3.fromRGB(206, 210, 236),
+	Panel = Color3.fromRGB(46, 46, 56), -- window body (with little studs)
+	Panel2 = Color3.fromRGB(64, 64, 78), -- cards on the body
 	-- candy palette
 	Money = Color3.fromRGB(120, 255, 90),
 	Money2 = Color3.fromRGB(26, 186, 60),
@@ -177,20 +179,20 @@ function Lib.shadow(target: GuiObject, radius: number?)
 	return s
 end
 
--- White outlined cartoon text. Dark = true gives navy text without an outline.
+-- White cartoon text with a dark outline (Stroke = false for none). `Dark` is
+-- accepted for older panels; every panel is dark now, so it's white too.
 function Lib.label(props: { [string]: any }): TextLabel
 	local stroke = props.Stroke
-	local dark = props.Dark
 	props.Stroke = nil
 	props.Dark = nil
 	props.BackgroundTransparency = props.BackgroundTransparency or 1
-	props.TextColor3 = props.TextColor3 or (if dark then Lib.Colors.TextDark else Lib.Colors.Text)
+	props.TextColor3 = props.TextColor3 or Lib.Colors.Text
 	if props.TextScaled == nil then
 		props.TextScaled = true
 	end
 	local l = Lib.new("TextLabel", props)
-	if stroke ~= false and not dark then
-		Lib.textStroke(l, 3)
+	if stroke ~= false then
+		Lib.textStroke(l, 2.5)
 	end
 	return l
 end
@@ -213,16 +215,69 @@ function Lib.tween(obj: Instance, t: number, props: { [string]: any }, style: En
 	return tw
 end
 
--- White card with a dark outline and a soft lavender gradient.
+-- Slate card with a black outline (sits on the dark window body).
 function Lib.card(parent: Instance?, props: { [string]: any }?): Frame
 	local p: { [string]: any } = props or {}
-	p.BackgroundColor3 = p.BackgroundColor3 or Lib.Colors.Cream
+	local tint = p.BackgroundColor3
+	p.BackgroundColor3 = WHITE
 	p.Parent = parent or p.Parent
 	local f = Lib.new("Frame", p)
-	Lib.corner(f, 18)
-	Lib.gradient(f, WHITE, Color3.fromRGB(232, 238, 255), 90)
-	Lib.stroke(f, Lib.Colors.Outline, 3)
+	Lib.corner(f, 12)
+	local c1 = if tint then tint:Lerp(Lib.Colors.Panel2, 0.35) else Lib.Colors.Panel2:Lerp(WHITE, 0.08)
+	Lib.gradient(f, c1, c1:Lerp(BLACK, 0.25), 90)
+	Lib.stroke(f, BLACK, 3)
 	return f
+end
+
+-- Colourful shop card: a gradient (c1 at the top, c2 at the bottom), faint stripes and a black outline.
+function Lib.shopCard(parent: Instance, size: UDim2, c1: Color3, c2: Color3, order: number?): Frame
+	local f = Lib.new("Frame", { Size = size, BackgroundColor3 = WHITE, LayoutOrder = order or 0, ClipsDescendants = true, Parent = parent })
+	Lib.corner(f, 10)
+	Lib.gradient(f, c1, c2, 90)
+	Lib.stroke(f, BLACK, 3.5)
+	Lib.stripes(f, 0.93)
+	return f
+end
+
+-- "-- EGGS --" section heading in gradient cartoon letters.
+function Lib.section(parent: Instance, text: string, color: Color3, order: number?): TextLabel
+	local l = Lib.label({ Name = "Section_" .. text, Text = "-- " .. string.upper(text) .. " --", Font = Lib.FontTitle, Size = UDim2.new(1, 0, 0, 46), LayoutOrder = order or 0, Parent = parent })
+	Lib.gradient(l, color:Lerp(WHITE, 0.45), color, 90)
+	local s = l:FindFirstChildOfClass("UIStroke")
+	if s then
+		s.Thickness = 3.5
+	end
+	return l
+end
+
+-- A tilted yellow "BEST VALUE!" tag for the top-right corner of a card.
+function Lib.ribbon(parent: Instance, text: string): Frame
+	local f = Lib.new("Frame", { Name = "Ribbon", Size = UDim2.fromOffset(150, 30), Position = UDim2.new(1, 10, 0, 6), AnchorPoint = Vector2.new(1, 0), Rotation = 12, BackgroundColor3 = Lib.Colors.Gold, ZIndex = 20, Parent = parent })
+	Lib.corner(f, 4)
+	Lib.stroke(f, BLACK, 2.5)
+	Lib.label({ Text = text, Font = Lib.FontTitle, Size = UDim2.new(1, -10, 1, -6), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), TextColor3 = Color3.fromRGB(30, 26, 20), Stroke = false, ZIndex = 21, Parent = f })
+	return f
+end
+
+-- Little round studs all over a dark background (one text label, cheap to draw).
+function Lib.studs(parent: GuiObject)
+	local row = string.rep("●   ", 60)
+	local rows = table.create(50, row)
+	Lib.new("TextLabel", {
+		Name = "Studs",
+		Size = UDim2.new(1, 0, 1, 0),
+		BackgroundTransparency = 1,
+		Text = table.concat(rows, "\n"),
+		TextSize = 14,
+		LineHeight = 1.25,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		TextColor3 = WHITE,
+		TextTransparency = 0.94,
+		TextWrapped = false,
+		ZIndex = parent.ZIndex,
+		Parent = parent,
+	})
 end
 
 -- Coloured pill with text on top. The gradient lives on the background frame
@@ -923,9 +978,11 @@ function Lib.SetPanelRoot(gui: ScreenGui)
 	panelRoot = gui
 end
 
--- A candy window: thick dark outline, light body, a coloured striped header
--- with a big icon bubble, sparkles, and a red close button. Slides in from the side.
--- Returns { frame, body, header, open(), close(), toggle(), isOpen(), onOpen, onClose }
+-- A shop-style window: dark studded body with a thick black outline, a bright
+-- striped header bar with the title on the left and a square red X on the
+-- right. Slides in from the side. Panels can add icon tabs down the right
+-- side with win.sideNav(...).
+-- Returns { frame, body, header, title, open(), close(), toggle(), isOpen(), sideNav(), onOpen, onClose }
 function Lib.window(title: string, size: Vector2, accent: Color3?, icon: string?): any
 	local c = Lib.Colors
 	local col = accent or c.Blue
@@ -934,35 +991,46 @@ function Lib.window(title: string, size: Vector2, accent: Color3?, icon: string?
 		Size = UDim2.fromOffset(size.X, size.Y),
 		Position = UDim2.new(-0.8, 0, 0.53, 0),
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		BackgroundColor3 = WHITE,
+		BackgroundColor3 = c.Panel,
 		Visible = false,
 		ZIndex = 10,
 		Parent = panelRoot,
 	})
-	Lib.corner(holder, 30)
-	Lib.gradient(holder, WHITE, Color3.fromRGB(214, 226, 255), 90)
-	Lib.stroke(holder, c.Outline, 5)
-	Lib.windowFit(holder, size + Vector2.new(40, 60))
-	local shadow = Lib.new("Frame", { Name = "Shadow", Size = UDim2.new(1, 6, 1, 6), Position = UDim2.fromOffset(-3, 10), BackgroundColor3 = BLACK, BackgroundTransparency = 0.6, ZIndex = 9, Parent = holder })
-	Lib.corner(shadow, 32)
+	Lib.corner(holder, 14)
+	Lib.stroke(holder, BLACK, 5)
+	Lib.windowFit(holder, size + Vector2.new(160, 40))
+	local shadow = Lib.new("Frame", { Name = "Shadow", Size = UDim2.new(1, 6, 1, 6), Position = UDim2.fromOffset(-3, 10), BackgroundColor3 = BLACK, BackgroundTransparency = 0.55, ZIndex = 9, Parent = holder })
+	Lib.corner(shadow, 16)
+	-- studs, clipped to the body
+	local back = Lib.new("Frame", { Name = "Back", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ClipsDescendants = true, ZIndex = 10, Parent = holder })
+	Lib.corner(back, 14)
+	Lib.studs(back)
 
-	local header = Lib.new("Frame", { Name = "Header", Size = UDim2.new(1, -20, 0, 72), Position = UDim2.fromOffset(10, -26), BackgroundColor3 = WHITE, ZIndex = 11, Parent = holder })
-	Lib.corner(header, 24)
-	Lib.new("UIGradient", { Color = Lib.buttonSeq(col), Rotation = 90, Parent = header })
-	Lib.stroke(header, c.Outline, 4.5)
-	Lib.stripes(header, 0.86)
-	local hg = Lib.new("Frame", { Size = UDim2.new(1, -16, 0.38, 0), Position = UDim2.fromOffset(8, 5), BackgroundColor3 = WHITE, BackgroundTransparency = 0.75, ZIndex = 11, Parent = header })
-	Lib.corner(hg, 18)
-	Lib.sparkles(header, 4)
+	local header = Lib.new("Frame", { Name = "Header", Size = UDim2.new(1, 0, 0, 62), BackgroundColor3 = WHITE, ZIndex = 11, Parent = holder })
+	Lib.corner(header, 12)
+	Lib.new("UIGradient", { Color = ColorSequence.new(col:Lerp(WHITE, 0.25), col:Lerp(BLACK, 0.12)), Rotation = 90, Parent = header })
+	-- square off the header's bottom corners and draw the dark line under it
+	local filler = Lib.new("Frame", { Size = UDim2.new(1, 0, 0, 14), Position = UDim2.new(0, 0, 1, -14), BackgroundColor3 = col:Lerp(BLACK, 0.1), ZIndex = 11, Parent = header })
+	local _ = filler
+	Lib.new("Frame", { Name = "Line", Size = UDim2.new(1, 0, 0, 4), Position = UDim2.new(0, 0, 1, 0), BackgroundColor3 = BLACK, ZIndex = 12, Parent = header })
+	Lib.stripes(header, 0.82)
+	local titleLabel = Lib.label({
+		Name = "Title",
+		Text = (if icon then icon .. " " else "") .. title,
+		Font = Lib.FontTitle,
+		Size = UDim2.new(1, -120, 0, 44),
+		Position = UDim2.new(0, 18, 0.5, 0),
+		AnchorPoint = Vector2.new(0, 0.5),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ZIndex = 13,
+		Parent = header,
+	})
+	local ts = titleLabel:FindFirstChildOfClass("UIStroke")
+	if ts then
+		ts.Thickness = 4
+	end
 
-	local iconBubble = Lib.new("Frame", { Name = "IconBubble", Size = UDim2.fromOffset(96, 96), Position = UDim2.new(0, -16, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundColor3 = WHITE, ZIndex = 13, Parent = header })
-	Lib.round(iconBubble)
-	Lib.new("UIGradient", { Color = Lib.buttonSeq(c.Gold, c.Gold2), Rotation = 90, Parent = iconBubble })
-	Lib.stroke(iconBubble, c.Outline, 4.5)
-	Lib.label({ Text = icon or "⭐", Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.48), AnchorPoint = Vector2.new(0.5, 0.5), Stroke = false, ZIndex = 14, Parent = iconBubble })
-	local titleLabel = Lib.title({ Name = "Title", Text = string.upper(title), Size = UDim2.new(1, -190, 0.8, 0), Position = UDim2.new(0, 96, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, Parent = header })
-
-	local body = Lib.new("Frame", { Name = "Body", Size = UDim2.new(1, -36, 1, -82), Position = UDim2.fromOffset(18, 62), BackgroundTransparency = 1, ZIndex = 11, Parent = holder })
+	local body = Lib.new("Frame", { Name = "Body", Size = UDim2.new(1, -32, 1, -86), Position = UDim2.fromOffset(16, 76), BackgroundTransparency = 1, ZIndex = 11, Parent = holder })
 
 	local win: any = { frame = holder, body = body, header = header, title = titleLabel }
 	local isOpen = false
@@ -1016,18 +1084,48 @@ function Lib.window(title: string, size: Vector2, accent: Color3?, icon: string?
 		return isOpen
 	end
 
-	Lib.button({
-		Text = "X",
-		Size = UDim2.fromOffset(64, 64),
-		Position = UDim2.new(1, 18, 0, -34),
-		AnchorPoint = Vector2.new(1, 0),
-		Color = c.Red,
-		Color2 = c.Red2,
-		Radius = 32,
-		ZIndex = 14,
-		Parent = holder,
-		OnClick = win.close,
-	})
+	-- Big icons with labels down the outside of the right edge. Returns select(name).
+	function win.sideNav(items: { { name: string, icon: string, color: Color3? } }, onSelect: (string) -> ()): (string) -> ()
+		local nav = Lib.new("Frame", { Name = "SideNav", Size = UDim2.new(0, 120, 1, -40), Position = UDim2.new(1, 14, 0, 30), BackgroundTransparency = 1, ZIndex = 11, Parent = holder })
+		Lib.list(nav, 6, false, Enum.HorizontalAlignment.Center).VerticalAlignment = Enum.VerticalAlignment.Top
+		local buttons: { [string]: TextButton } = {}
+		local function select(name: string)
+			for n, b in buttons do
+				local s = b:FindFirstChild("Sel") :: UIScale?
+				if s then
+					Lib.tween(s, 0.2, { Scale = if n == name then 1.12 else 0.92 }, Enum.EasingStyle.Back)
+				end
+			end
+			onSelect(name)
+		end
+		for k, item in items do
+			local b = Lib.new("TextButton", { Name = item.name, Text = "", AutoButtonColor = false, Size = UDim2.fromOffset(110, 92), BackgroundTransparency = 1, LayoutOrder = k, ZIndex = 12, Parent = nav })
+			Lib.new("UIScale", { Name = "Sel", Scale = 0.92, Parent = b })
+			Lib.label({ Text = item.icon, Size = UDim2.fromOffset(64, 60), Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0), Stroke = false, ZIndex = 13, Parent = b })
+			local l = Lib.label({ Text = item.name, Font = Lib.FontTitle, Size = UDim2.new(1, 0, 0, 28), Position = UDim2.new(0, 0, 1, -28), ZIndex = 13, Parent = b })
+			if item.color then
+				Lib.gradient(l, item.color:Lerp(WHITE, 0.5), item.color, 90)
+			end
+			b.Activated:Connect(function()
+				Lib.sound("Pop")
+				select(item.name)
+			end)
+			buttons[item.name] = b
+		end
+		return select
+	end
+
+	-- square red X on the right of the header
+	local x = Lib.new("TextButton", { Name = "Close", Text = "", AutoButtonColor = false, Size = UDim2.fromOffset(50, 46), Position = UDim2.new(1, -10, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), BackgroundColor3 = WHITE, ZIndex = 14, Parent = header })
+	Lib.corner(x, 6)
+	Lib.new("UIGradient", { Color = ColorSequence.new(Color3.fromRGB(255, 70, 70), Color3.fromRGB(190, 20, 30)), Rotation = 90, Parent = x })
+	Lib.stroke(x, BLACK, 3)
+	Lib.label({ Text = "X", Font = Lib.FontTitle, Size = UDim2.fromScale(0.62, 0.7), Position = UDim2.fromScale(0.5, 0.52), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 15, Parent = x })
+	Lib.bouncy(x)
+	x.Activated:Connect(function()
+		Lib.sound("Pop")
+		win.close()
+	end)
 	return win
 end
 
@@ -1064,7 +1162,7 @@ function Lib.tabs(parent: Instance, names: { string }, height: number, onSelect:
 					Lib.tween(s, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
 				end
 			else
-				Lib.recolor(b, Lib.Colors.Grey, Lib.Colors.Grey2)
+				Lib.recolor(b, Color3.fromRGB(78, 78, 96), Color3.fromRGB(52, 52, 66))
 			end
 		end
 		onSelect(name)

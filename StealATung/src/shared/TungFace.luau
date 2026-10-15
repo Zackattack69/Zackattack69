@@ -17,8 +17,8 @@ export type Face = {
 	eyes: string, -- Round | Big | Small | Shock | Narrow | Sleepy | Smug | Happy | Wink | Derp | Star | None
 	brows: string, -- Normal | Flat | Angry | Raised | Worried | One | Uneven | None
 	mouth: string, -- Open | Grin | Smile | Frown | O | SmallO | Smirk | Tongue | Fangs | Zigzag | Grille | Buck | Evil | Roar
-	nose: string?, -- Round (default) | Big | Long | None
-	extras: { string }?, -- Blush | Freckles | Mustache | Monocle | Beard | GoldTooth | Sweat | Tear | Drool
+	nose: string?, -- Round (default) | Big | Long | Red | None
+	extras: { string }?, -- Blush | Freckles | Mustache | Monocle | Beard | WhiteBeard | Eyepatch | GoldTooth | Sweat | Tear | Drool
 }
 
 TungFace.FACES = {
@@ -45,6 +45,14 @@ TungFace.FACES = {
 	Goofy = { eyes = "Round", brows = "Raised", mouth = "Buck", nose = "Long" },
 	Boss = { eyes = "Small", brows = "Flat", mouth = "Smirk", extras = { "GoldTooth" } },
 	Nervous = { eyes = "Round", brows = "Worried", mouth = "Zigzag", extras = { "Sweat" } },
+	Nerd = { eyes = "Big", brows = "Raised", mouth = "Buck" },
+	Pirate = { eyes = "Round", brows = "Angry", mouth = "Grin", extras = { "Eyepatch" } },
+	Wise = { eyes = "Smug", brows = "Raised", mouth = "Smile", extras = { "WhiteBeard" } },
+	Jolly = { eyes = "Happy", brows = "Raised", mouth = "Grin", nose = "Big", extras = { "WhiteBeard", "Blush" } },
+	Stache = { eyes = "Round", brows = "Normal", mouth = "Smile", extras = { "Mustache" } },
+	Clown = { eyes = "Big", brows = "Raised", mouth = "Grin", nose = "Red", extras = { "Blush" } },
+	Boo = { eyes = "Shock", brows = "None", mouth = "O", nose = "None" },
+	Grumpy = { eyes = "Smug", brows = "Angry", mouth = "Frown" },
 } :: { [string]: Face }
 
 local BALL = Enum.PartType.Ball
@@ -197,6 +205,8 @@ function TungFace.Build(model: Model, look: Tungs.Look, skinColor: Color3, skinM
 		part(model, "Nose", BALL, Vector3.new(0.42, 0.42, 0.42), surf(0, 4.55, 0.05), noseColor, skinMat)
 	elseif nose == "Big" then
 		part(model, "Nose", BALL, Vector3.new(0.64, 0.64, 0.64), surf(0, 4.52, 0.1), noseColor, skinMat)
+	elseif nose == "Red" then
+		part(model, "Nose", BALL, Vector3.new(0.72, 0.72, 0.72), surf(0, 4.5, 0.18), Color3.fromRGB(235, 30, 40))
 	elseif nose == "Long" then
 		part(model, "Nose", CYL, Vector3.new(1, 0.32, 0.32), surf(0, 4.55, 0.45) * FACING, noseColor, skinMat)
 		part(model, "NoseTip", BALL, Vector3.new(0.36, 0.36, 0.36), surf(0, 4.55, 0.95), noseColor, skinMat)
@@ -310,6 +320,13 @@ function TungFace.Build(model: Model, look: Tungs.Look, skinColor: Color3, skinM
 		elseif extra == "Tear" then
 			part(model, "Tear", BALL, Vector3.new(0.24, 0.24, 0.24), surf(-0.66, 4.6, 0.04), WATER, M.Glass, { Transparency = 0.1 })
 			part(model, "Tear", BALL, Vector3.new(0.16, 0.16, 0.16), surf(-0.68, 4.38, 0.04), WATER, M.Glass, { Transparency = 0.1 })
+		elseif extra == "WhiteBeard" then
+			for _, off in { Vector3.new(0, 3.25, 0.12), Vector3.new(-0.55, 3.45, 0.02), Vector3.new(0.55, 3.45, 0.02), Vector3.new(-0.3, 2.85, 0.08), Vector3.new(0.3, 2.85, 0.08), Vector3.new(0, 2.55, 0.1) } do
+				part(model, "Beard", BALL, Vector3.new(0.85, 0.85, 0.85), surf(off.X, off.Y, off.Z), WHITE)
+			end
+		elseif extra == "Eyepatch" then
+			part(model, "Eyepatch", CYL, Vector3.new(0.1, 0.95, 0.95), surf(0.5, 5.0, 0.62) * FACING, BLACK)
+			part(model, "Strap", BLOCK, Vector3.new(1.5, 0.12, 0.1), surf(0.1, 5.4, 0.05) * tilt(-0.25), BLACK)
 		elseif extra == "Drool" then
 			part(model, "Drool", BLOCK, Vector3.new(0.1, 0.42, 0.08), surf(0.24, 3.6, 0.05), WATER, M.Glass, { Transparency = 0.2 })
 		end

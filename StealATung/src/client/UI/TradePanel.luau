@@ -8,8 +8,8 @@ local Players = game:GetService("Players")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local GameConfig = require(Shared.Config.GameConfig)
 local Mutations = require(Shared.Config.Mutations)
+local Economy = require(Shared.Config.Economy)
 local Tungs = require(Shared.Config.Tungs)
-local Format = require(Shared.Util.Format)
 local Remotes = require(Shared.Remotes)
 
 local State = require(script.Parent.Parent.State)
@@ -29,7 +29,7 @@ local function tungTile(parent: Instance, id: string, mut: string, order: number
 	Lib.stroke(f, if selected then C.Gold else C.Wood2, if selected then 5 else 3)
 	Lib.tungViewport(f, id, mut, UDim2.new(1, -6, 0, 82), UDim2.fromOffset(3, 2), false)
 	Lib.label({ Text = Mutations.Prefix(mut) .. (if t then t.name else id), Size = UDim2.new(1, -6, 0, 22), Position = UDim2.fromOffset(3, 84), Parent = f })
-	Lib.label({ Text = Format.Money((if t then t.income else 0) * Mutations.Mult(mut)) .. "/s", Size = UDim2.new(1, -6, 0, 18), Position = UDim2.fromOffset(3, 108), TextColor3 = Color3.fromRGB(255, 230, 110), Parent = f })
+	Lib.label({ Text = if t then Economy.IncomeText(t.id, mut) else "", Size = UDim2.new(1, -6, 0, 18), Position = UDim2.fromOffset(3, 108), TextColor3 = Color3.fromRGB(255, 230, 110), Parent = f })
 	if selected then
 		Lib.label({ Text = "✅", Size = UDim2.fromOffset(28, 28), Position = UDim2.new(1, -2, 0, 2), AnchorPoint = Vector2.new(1, 0), Stroke = false, Parent = f })
 	end

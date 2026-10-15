@@ -69,7 +69,10 @@ local function makeBat(tier: number): Tool
 	tool.ToolTip = bat.name .. " — bonk thieves!"
 	tool.CanBeDropped = false
 	tool.RequiresHandle = true
-	tool.Grip = CFrame.new(0, 0, -0.7)
+	-- Held like a classic sword: the fist wraps the handle near the knob and the bat
+	-- points up and out of the hand instead of lying along the arm.
+	-- (GripPos (0, 0, -0.6), GripRight +Y, GripUp +Z = the barrel end, GripForward -X)
+	tool.Grip = CFrame.fromMatrix(Vector3.new(0, 0, -0.6), Vector3.new(0, 1, 0), Vector3.new(0, 0, 1), Vector3.new(1, 0, 0))
 	tool:SetAttribute("Tier", tier)
 
 	local handle = Instance.new("Part")

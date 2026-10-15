@@ -51,11 +51,8 @@ end
 -- Income/s of everything in the base (what the HUD shows).
 function EconomyService.Income(player: Player, data: any): number
 	local mult = EconomyService.Multiplier(player, data)
-	local total = 0
-	for _, s in data.slots do
-		total += Economy.TungIncome(s.id, s.m)
-	end
-	return total * mult
+	local fixed, share = Economy.SlotIncome(data.slots)
+	return fixed * (1 + share) * mult
 end
 
 function EconomyService.AddMoney(player: Player, amount: number)

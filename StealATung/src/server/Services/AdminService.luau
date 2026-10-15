@@ -225,7 +225,7 @@ function AdminService.StartEvent(player: Player, key: any): (boolean, any)
 end
 
 -- Free test hatch for admins (so eggs can be tried before the Robux products exist).
-function AdminService.TestEgg(player: Player, key: any): (boolean, any)
+function AdminService.TestEgg(player: Player, key: any, count: any): (boolean, any)
 	local ok, why = allowed(player)
 	if not ok then
 		return false, why
@@ -234,7 +234,7 @@ function AdminService.TestEgg(player: Player, key: any): (boolean, any)
 	if not egg then
 		return false, "Unknown egg"
 	end
-	ShopService.Hatch(player, egg)
+	ShopService.Hatch(player, egg, tonumber(count) or 1)
 	return true, nil
 end
 

@@ -43,6 +43,7 @@ local Sounds: { [string]: Cue } = {
 	SpawnLegendary = { id = VICTORY, pitch = 1.2, volume = 0.3 },
 	SpawnSecret = { id = VICTORY, pitch = 0.9, volume = 0.35 },
 	SpawnMythic = { id = VICTORY, pitch = 0.75, volume = 0.45 },
+	SpawnIconic = { id = VICTORY, pitch = 1.05, volume = 0.45 },
 }
 
 return Sounds
